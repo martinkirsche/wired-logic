@@ -30,29 +30,20 @@ func main() {
 		log.Fatal(err)
 	}
 
-	gifImage.Image = gifImage.Image[:1]
-	gifImage.Delay = gifImage.Delay[:1]
-	gifImage.Disposal = gifImage.Disposal[:1]
-
 	img := gifImage.Image[0]
 
 	log.Println("simulating...")
-	simulation, frameCounter := NewSimulation(img).FindLooping()
-	simulation = simulation.Step()
-	simulation.Draw(gifImage.Image[0])
-	frameCounter--
+	simulation, frameCount := NewSimulation(img).FindLooping()
 
 	log.Println("rendering...")
 	img.Palette[0] = color.Transparent
-	for f := 0; f < frameCounter; f++ {
-		img := image.NewPaletted(img.Bounds(), img.Palette)
-		newSimulation := simulation.Step()
-		newSimulation.DiffDraw(simulation, img)
-		simulation = newSimulation
-		gifImage.Image = append(gifImage.Image, img)
-		gifImage.Delay = append(gifImage.Delay, 1)
-		gifImage.Disposal = append(gifImage.Disposal, 0)
+
+	gifImage.Delay = make([]int, frameCount)
+	gifImage.Disposal = make([]byte, frameCount)
+	for i := range gifImage.Delay {
+		gifImage.Delay[i] = 1
 	}
+	gifImage.Image = simulation.DrawAll(img, frameCount)
 
 	log.Println("writing...")
 	out, err := os.Create(outputFileName)
@@ -259,6 +250,22 @@ func (s *Simulation) Draw(img *image.Paletted) {
 	for _, transistor := range s.circuit.transistors {
 		transistor.draw(img, maxCharge+2)
 	}
+}
+
+func (s *Simulation) DrawAll(initialImage *image.Paletted, frameCount int) []*image.Paletted {
+	bounds := initialImage.Bounds()
+	images := make([]*image.Paletted, frameCount)
+	s = s.Step()
+	s.Draw(initialImage)
+	images[0] = initialImage
+	for f := 1; f < frameCount; f++ {
+		newSimulation := s.Step()
+		img := image.NewPaletted(bounds, initialImage.Palette)
+		newSimulation.DiffDraw(s, img)
+		images[f] = img
+		s = newSimulation
+	}
+	return images
 }
 
 func (s *Simulation) FindLooping() (*Simulation, int) {
