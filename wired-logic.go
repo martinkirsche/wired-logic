@@ -32,8 +32,12 @@ func main() {
 
 	img := gifImage.Image[0]
 
+	log.Println("converting...")
+	simulation := NewSimulation(img)
+
 	log.Println("simulating...")
-	simulation, frameCount := NewSimulation(img).FindLooping()
+	var frameCount int
+	simulation, frameCount = simulation.FindLooping()
 
 	log.Println("rendering...")
 	img.Palette[0] = color.Transparent
