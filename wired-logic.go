@@ -259,7 +259,6 @@ func (s *Simulation) Draw(img *image.Paletted) {
 func (s *Simulation) DrawAll(initialImage *image.Paletted, frameCount int) []*image.Paletted {
 	bounds := initialImage.Bounds()
 	images := make([]*image.Paletted, frameCount)
-	s = s.Step()
 	s.Draw(initialImage)
 	images[0] = initialImage
 	for f := 1; f < frameCount; f++ {
