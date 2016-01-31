@@ -97,16 +97,17 @@ func NewCircuit(img *image.Paletted) Circuit {
 				topBucket := matrix.get(x, y-1)
 				leftBucket := matrix.get(x-1, y)
 				var currentBucket *bucket
-				if nil == topBucket && nil == leftBucket {
+				switch {
+				case nil == topBucket && nil == leftBucket:
 					currentBucket = newBucket()
 					groups[currentBucket.group] = struct{}{}
-				} else if nil == topBucket && nil != leftBucket {
+				case nil == topBucket && nil != leftBucket:
 					currentBucket = leftBucket
-				} else if (nil != topBucket && nil == leftBucket) ||
+				case (nil != topBucket && nil == leftBucket) ||
 					topBucket == leftBucket ||
-					topBucket.group == leftBucket.group {
+					topBucket.group == leftBucket.group:
 					currentBucket = topBucket
-				} else {
+				default:
 					currentBucket = topBucket
 					delete(groups, topBucket.group)
 					topBucket.group.moveBucketsTo(leftBucket.group)
