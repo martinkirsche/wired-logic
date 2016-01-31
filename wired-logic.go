@@ -44,9 +44,12 @@ func main() {
 		break
 	}
 
+	log.Println("simulating...")
 	simulation, loopingHash := NewSimulation(img).FindLooping()
 	simulation = simulation.Step()
 	simulation.Draw(gifImage.Image[0])
+
+	log.Println("rendering...")
 	for !bytes.Equal(loopingHash[:], simulation.Hash()) {
 		img := image.NewPaletted(img.Bounds(), img.Palette)
 		palettedFill(img, transparentColorIndex)
@@ -58,16 +61,18 @@ func main() {
 		gifImage.Disposal = append(gifImage.Disposal, 0)
 	}
 
+	log.Println("writing...")
 	out, err := os.Create(outputFileName)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
 	err = gif.EncodeAll(out, gifImage)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println("done.")
 }
 
 func palettedFill(img *image.Paletted, index uint8) {
