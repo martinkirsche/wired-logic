@@ -45,12 +45,13 @@ func main() {
 	}
 
 	log.Println("simulating...")
-	simulation, loopingHash := NewSimulation(img).FindLooping()
+	simulation, frameCounter := NewSimulation(img).FindLooping()
 	simulation = simulation.Step()
 	simulation.Draw(gifImage.Image[0])
+	frameCounter--
 
 	log.Println("rendering...")
-	for !bytes.Equal(loopingHash[:], simulation.Hash()) {
+	for f := 0; f < frameCounter; f++ {
 		img := image.NewPaletted(img.Bounds(), img.Palette)
 		palettedFill(img, transparentColorIndex)
 		newSimulation := simulation.Step()
@@ -276,16 +277,18 @@ func (s *Simulation) Draw(img *image.Paletted) {
 	}
 }
 
-func (s *Simulation) FindLooping() (*Simulation, []byte) {
-	hashs := make(map[[sha1.Size]byte]struct{}, 0)
+func (s *Simulation) FindLooping() (*Simulation, int) {
+	hashs := make(map[[sha1.Size]byte]int, 0)
+	frame := 0
 	for {
 		s = s.Step()
 		var hash [sha1.Size]byte
 		copy(hash[:], s.Hash())
-		if _, ok := hashs[hash]; ok {
-			return s, hash[:]
+		if f, ok := hashs[hash]; ok {
+			return s, frame - f
 		}
-		hashs[hash] = struct{}{}
+		hashs[hash] = frame
+		frame++
 	}
 }
 
