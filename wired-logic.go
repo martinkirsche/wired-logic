@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"image"
+	"image/color"
 	"image/gif"
 	"log"
 	"os"
@@ -35,15 +36,6 @@ func main() {
 
 	img := gifImage.Image[0]
 
-	transparentColorIndex := uint8(0)
-	for index, color := range img.Palette {
-		if _, _, _, a := color.RGBA(); a != 0 {
-			continue
-		}
-		transparentColorIndex = uint8(index)
-		break
-	}
-
 	log.Println("simulating...")
 	simulation, frameCounter := NewSimulation(img).FindLooping()
 	simulation = simulation.Step()
@@ -51,9 +43,9 @@ func main() {
 	frameCounter--
 
 	log.Println("rendering...")
+	img.Palette[0] = color.Transparent
 	for f := 0; f < frameCounter; f++ {
 		img := image.NewPaletted(img.Bounds(), img.Palette)
-		palettedFill(img, transparentColorIndex)
 		newSimulation := simulation.Step()
 		newSimulation.DiffDraw(simulation, img)
 		simulation = newSimulation
@@ -74,15 +66,6 @@ func main() {
 	}
 
 	log.Println("done.")
-}
-
-func palettedFill(img *image.Paletted, index uint8) {
-	bounds := img.Bounds()
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			img.SetColorIndex(x, y, index)
-		}
-	}
 }
 
 type circuit struct {
@@ -106,7 +89,8 @@ func NewSimulation(img *image.Paletted) *Simulation {
 	matrix := newBucketMatrix(size.X, size.Y)
 	for y := 0; y < size.Y; y++ {
 		for x := 0; x < size.X; x++ {
-			if img.ColorIndexAt(x, y) <= maxCharge {
+			c := img.ColorIndexAt(x, y)
+			if c > 0 && c <= maxCharge+1 {
 				topLeftBucket := matrix.get(x-1, y-1)
 				topBucket := matrix.get(x, y-1)
 				leftBucket := matrix.get(x-1, y)
@@ -264,16 +248,16 @@ func (s *Simulation) DiffDraw(previousSimulation *Simulation, img *image.Palette
 		if previousSimulation.states[i].charge == state.charge {
 			continue
 		}
-		state.wire.draw(img, state.charge)
+		state.wire.draw(img, state.charge+1)
 	}
 }
 
 func (s *Simulation) Draw(img *image.Paletted) {
 	for _, state := range s.states {
-		state.wire.draw(img, state.charge)
+		state.wire.draw(img, state.charge+1)
 	}
 	for _, transistor := range s.circuit.transistors {
-		transistor.draw(img, 9)
+		transistor.draw(img, maxCharge+2)
 	}
 }
 

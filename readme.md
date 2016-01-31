@@ -24,7 +24,7 @@ gif image.
 
 ### The rules
 
-1. Wires are all pixels of the color from index 0 to 6 within the palette.
+1. Wires are all pixels of the color from index 1 to 7 within the palette.
 2. A 2x2 pixel square within a wire will make the wire a power source.
 3. Wires can cross each other by poking a hole in the middle of their crossing.
 4. A transistor gets created by drawing an arbitrarily rotated T-shape and, 
