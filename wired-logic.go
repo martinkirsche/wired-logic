@@ -35,8 +35,6 @@ func main() {
 
 	img := gifImage.Image[0]
 
-	circuit := NewCircuit(img)
-
 	transparentColorIndex := uint8(0)
 	for index, color := range img.Palette {
 		if _, _, _, a := color.RGBA(); a != 0 {
@@ -46,14 +44,15 @@ func main() {
 		break
 	}
 
-	loopingHash := circuit.FindLoopingHash()
-	circuit.Simulate()
-	circuit.Draw(gifImage.Image[0])
-	for !bytes.Equal(loopingHash[:], circuit.Hash()) {
+	simulation, loopingHash := NewSimulation(img).FindLooping()
+	simulation = simulation.Step()
+	simulation.Draw(gifImage.Image[0])
+	for !bytes.Equal(loopingHash[:], simulation.Hash()) {
 		img := image.NewPaletted(img.Bounds(), img.Palette)
 		palettedFill(img, transparentColorIndex)
-		circuit.Simulate()
-		circuit.DiffDraw(img)
+		newSimulation := simulation.Step()
+		newSimulation.DiffDraw(simulation, img)
+		simulation = newSimulation
 		gifImage.Image = append(gifImage.Image, img)
 		gifImage.Delay = append(gifImage.Delay, 1)
 		gifImage.Disposal = append(gifImage.Disposal, 0)
@@ -80,19 +79,28 @@ func palettedFill(img *image.Paletted, index uint8) {
 	}
 }
 
-type Circuit struct {
+type circuit struct {
 	wires       []*wire
 	transistors []*transistor
 }
 
-func NewCircuit(img *image.Paletted) Circuit {
+type wireState struct {
+	charge uint8
+	wire   *wire
+}
+
+type Simulation struct {
+	circuit *circuit
+	states  []wireState
+}
+
+func NewSimulation(img *image.Paletted) *Simulation {
 	size := img.Bounds().Size()
 	groups := make(map[*group]struct{}, 0)
 	matrix := newBucketMatrix(size.X, size.Y)
 	for y := 0; y < size.Y; y++ {
 		for x := 0; x < size.X; x++ {
-			r := img.ColorIndexAt(x, y)
-			if r <= maxCharge {
+			if img.ColorIndexAt(x, y) <= maxCharge {
 				topLeftBucket := matrix.get(x-1, y-1)
 				topBucket := matrix.get(x, y-1)
 				leftBucket := matrix.get(x-1, y)
@@ -114,15 +122,9 @@ func NewCircuit(img *image.Paletted) Circuit {
 				}
 				if nil != topLeftBucket && nil != topBucket && nil != leftBucket {
 					currentBucket.group.wire.isPowerSource = true
-					currentBucket.group.wire.charge = maxCharge
-					currentBucket.group.wire.previousCharge = maxCharge
 				}
 				matrix.set(x, y, currentBucket)
 				currentBucket.addPixel(image.Point{x, y})
-				if r > currentBucket.group.wire.charge {
-					currentBucket.group.wire.charge = r
-					currentBucket.group.wire.previousCharge = r
-				}
 			}
 		}
 	}
@@ -187,76 +189,112 @@ func NewCircuit(img *image.Paletted) Circuit {
 	}
 
 	wires := make([]*wire, len(groups))
+	wireStates := make([]wireState, len(groups))
 	i := 0
 	for k := range groups {
+		k.wire.index = i
 		wires[i] = k.wire
+		var charge uint8
+		if k.wire.isPowerSource {
+			charge = maxCharge
+		} else {
+			charge = 0
+		}
+		wireStates[i] = wireState{charge, k.wire}
 		i++
 	}
 
-	return Circuit{wires: wires, transistors: transistors}
+	return &Simulation{&circuit{wires: wires, transistors: transistors}, wireStates}
 }
 
-func (c *Circuit) Simulate() {
-	for _, wire := range c.wires {
-		if wire.isPowerSource {
-			continue
+func (s *Simulation) Step() *Simulation {
+	newWireState := make([]wireState, len(s.states))
+	for i, state := range s.states {
+		charge := state.charge
+		if !state.wire.isPowerSource {
+			source := s.tracePowerSource(state)
+			if source.charge > state.charge+1 {
+				charge = state.charge + 1
+			} else if source.charge <= state.charge && state.charge > 0 {
+				charge = state.charge - 1
+			}
 		}
-		wire.previousCharge = wire.charge
+		newWireState[i] = wireState{charge, state.wire}
 	}
-	for _, wire := range c.wires {
-		if wire.isPowerSource {
+	return &Simulation{s.circuit, newWireState}
+}
+
+func (s *Simulation) tracePowerSource(origin wireState) wireState {
+	result := origin
+	for _, transistor := range origin.wire.transistors {
+		if nil != transistor.base && s.states[transistor.base.index].charge > 0 {
 			continue
 		}
-		source := wire.tracePowerSource()
-		if source.previousCharge > wire.previousCharge+1 {
-			wire.charge++
-		} else if source.previousCharge <= wire.previousCharge && wire.previousCharge > 0 {
-			wire.charge--
+		if origin.wire == transistor.inputA {
+			inputBState := s.states[transistor.inputB.index]
+			if transistor.inputB.isPowerSource {
+				return inputBState
+			}
+			if inputBState.charge > result.charge {
+				result = inputBState
+				continue
+			}
+		} else if origin.wire == transistor.inputB {
+			inputAState := s.states[transistor.inputA.index]
+			if transistor.inputA.isPowerSource {
+				return inputAState
+			}
+			if inputAState.charge > result.charge {
+				result = inputAState
+				continue
+			}
 		}
+	}
+	return result
+}
+
+func (s *Simulation) DiffDraw(previousSimulation *Simulation, img *image.Paletted) {
+	for i, state := range s.states {
+		if previousSimulation.states[i].charge == state.charge {
+			continue
+		}
+		state.wire.draw(img, state.charge)
 	}
 }
 
-func (c *Circuit) DiffDraw(img *image.Paletted) {
-	for _, wire := range c.wires {
-		if wire.previousCharge == wire.charge {
-			continue
-		}
-		wire.draw(img, wire.charge)
+func (s *Simulation) Draw(img *image.Paletted) {
+	for _, state := range s.states {
+		state.wire.draw(img, state.charge)
 	}
-}
-
-func (c *Circuit) Draw(img *image.Paletted) {
-	for _, wire := range c.wires {
-		wire.draw(img, wire.charge)
-	}
-	for _, transistor := range c.transistors {
+	for _, transistor := range s.circuit.transistors {
 		transistor.draw(img, 9)
 	}
 }
 
-func (c *Circuit) FindLoopingHash() []byte {
+func (s *Simulation) FindLooping() (*Simulation, []byte) {
 	hashs := make(map[[sha1.Size]byte]struct{}, 0)
 	for {
-		c.Simulate()
+		s = s.Step()
 		var hash [sha1.Size]byte
-		copy(hash[:], c.Hash())
+		copy(hash[:], s.Hash())
 		if _, ok := hashs[hash]; ok {
-			return hash[:]
+			return s, hash[:]
 		}
 		hashs[hash] = struct{}{}
 	}
 }
 
-func (c *Circuit) Hash() []byte {
+func (s *Simulation) Hash() []byte {
 	hash := sha1.New()
-	for index, wire := range c.wires {
+
+	for index, state := range s.states {
 		buf := new(bytes.Buffer)
 
 		err := binary.Write(buf, binary.LittleEndian, uint32(index))
 		if err != nil {
 			log.Fatal(err)
 		}
-		err = binary.Write(buf, binary.LittleEndian, wire.charge)
+		err = binary.Write(buf, binary.LittleEndian, state.charge)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -292,22 +330,20 @@ func (t *transistor) draw(img *image.Paletted, colorIndex uint8) {
 }
 
 type wire struct {
-	pixels         []image.Point
-	bounds         image.Rectangle
-	transistors    []*transistor
-	isPowerSource  bool
-	charge         uint8
-	previousCharge uint8
+	index         int
+	pixels        []image.Point
+	bounds        image.Rectangle
+	transistors   []*transistor
+	isPowerSource bool
 }
 
 func newWire() *wire {
 	return &wire{
-		pixels:         make([]image.Point, 0),
-		bounds:         image.Rectangle{image.Pt(0, 0), image.Pt(0, 0)},
-		transistors:    make([]*transistor, 0),
-		isPowerSource:  false,
-		charge:         0,
-		previousCharge: 0,
+		index:         -1,
+		pixels:        make([]image.Point, 0),
+		bounds:        image.Rectangle{image.Pt(0, 0), image.Pt(0, 0)},
+		transistors:   make([]*transistor, 0),
+		isPowerSource: false,
 	}
 }
 
@@ -315,33 +351,6 @@ func (w *wire) draw(img *image.Paletted, colorIndex uint8) {
 	for _, pixel := range w.pixels {
 		img.SetColorIndex(pixel.X, pixel.Y, colorIndex)
 	}
-}
-
-func (w *wire) tracePowerSource() *wire {
-	result := w
-	for _, transistor := range w.transistors {
-		if nil != transistor.base && transistor.base.previousCharge > 0 {
-			continue
-		}
-		if w == transistor.inputA {
-			if transistor.inputB.isPowerSource {
-				return transistor.inputB
-			}
-			if transistor.inputB.previousCharge > result.previousCharge {
-				result = transistor.inputB
-				continue
-			}
-		} else if w == transistor.inputB {
-			if transistor.inputA.isPowerSource {
-				return transistor.inputA
-			}
-			if transistor.inputA.previousCharge > result.previousCharge {
-				result = transistor.inputA
-				continue
-			}
-		}
-	}
-	return result
 }
 
 type bucketMatrix struct {
@@ -404,8 +413,6 @@ func (g *group) moveBucketsTo(other *group) {
 	}
 	if g.wire.isPowerSource {
 		other.wire.isPowerSource = true
-		other.wire.charge = maxCharge
-		other.wire.previousCharge = maxCharge
 	}
 	other.wire.bounds = other.wire.bounds.Union(g.wire.bounds)
 	other.wire.pixels = append(other.wire.pixels, g.wire.pixels...)
