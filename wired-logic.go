@@ -191,13 +191,7 @@ func NewSimulation(img *image.Paletted) *Simulation {
 	for k := range groups {
 		k.wire.index = i
 		wires[i] = k.wire
-		var charge uint8
-		if k.wire.isPowerSource {
-			charge = maxCharge
-		} else {
-			charge = 0
-		}
-		wireStates[i] = wireState{charge, k.wire}
+		wireStates[i] = wireState{0, k.wire}
 		i++
 	}
 
@@ -208,7 +202,11 @@ func (s *Simulation) Step() *Simulation {
 	newWireState := make([]wireState, len(s.states))
 	for i, state := range s.states {
 		charge := state.charge
-		if !state.wire.isPowerSource {
+		if state.wire.isPowerSource {
+			if state.charge < maxCharge {
+				charge = state.charge + 1
+			}
+		} else {
 			source := s.tracePowerSource(state)
 			if source.charge > state.charge+1 {
 				charge = state.charge + 1
@@ -229,7 +227,7 @@ func (s *Simulation) tracePowerSource(origin wireState) wireState {
 		}
 		if origin.wire == transistor.inputA {
 			inputBState := s.states[transistor.inputB.index]
-			if transistor.inputB.isPowerSource {
+			if inputBState.charge == maxCharge {
 				return inputBState
 			}
 			if inputBState.charge > result.charge {
@@ -238,7 +236,7 @@ func (s *Simulation) tracePowerSource(origin wireState) wireState {
 			}
 		} else if origin.wire == transistor.inputB {
 			inputAState := s.states[transistor.inputA.index]
-			if transistor.inputA.isPowerSource {
+			if inputAState.charge == maxCharge {
 				return inputAState
 			}
 			if inputAState.charge > result.charge {
