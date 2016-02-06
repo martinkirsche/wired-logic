@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"flag"
 	"fmt"
 	"image"
 	"image/color"
@@ -16,8 +17,13 @@ const maxCharge = 6
 
 func main() {
 
-	inputFileName := os.Args[1]
-	outputFileName := os.Args[2]
+	var startFrame int
+	var frameCount int
+	flag.IntVar(&startFrame, "start", 0, "frame at wich the animation should start")
+	flag.IntVar(&frameCount, "count", 0, "amount of frames the animation should have")
+	flag.Parse()
+	inputFileName := flag.Arg(0)
+	outputFileName := flag.Arg(1)
 
 	in, err := os.Open(inputFileName)
 	if err != nil {
@@ -36,8 +42,14 @@ func main() {
 	simulation := NewSimulation(img)
 
 	log.Println("simulating...")
-	var frameCount int
-	simulation, frameCount = simulation.FindLooping()
+
+	for ; startFrame > 0; startFrame-- {
+		simulation = simulation.Step()
+	}
+
+	if 0 == frameCount {
+		simulation, frameCount = simulation.FindLooping()
+	}
 
 	log.Println("rendering...")
 	img.Palette[0] = color.Transparent
