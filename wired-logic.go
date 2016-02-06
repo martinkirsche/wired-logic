@@ -96,33 +96,37 @@ func NewSimulation(img *image.Paletted) *Simulation {
 	matrix := newBucketMatrix(size.X, size.Y)
 	for y := 0; y < size.Y; y++ {
 		for x := 0; x < size.X; x++ {
-			c := img.ColorIndexAt(x, y)
-			if c > 0 && c <= maxCharge+1 {
-				topLeftBucket := matrix.get(x-1, y-1)
-				topBucket := matrix.get(x, y-1)
-				leftBucket := matrix.get(x-1, y)
-				var currentBucket *bucket
-				switch {
-				case nil == topBucket && nil == leftBucket:
-					currentBucket = newBucket()
-					groups[currentBucket.group] = struct{}{}
-				case nil == topBucket && nil != leftBucket:
-					currentBucket = leftBucket
-				case (nil != topBucket && nil == leftBucket) ||
-					topBucket == leftBucket ||
-					topBucket.group == leftBucket.group:
-					currentBucket = topBucket
-				default:
-					currentBucket = topBucket
-					delete(groups, topBucket.group)
-					topBucket.group.moveBucketsTo(leftBucket.group)
-				}
-				if nil != topLeftBucket && nil != topBucket && nil != leftBucket {
-					currentBucket.group.wire.isPowerSource = true
-				}
-				matrix.set(x, y, currentBucket)
-				currentBucket.addPixel(image.Point{x, y})
+			charge := img.ColorIndexAt(x, y) - 1
+			if charge > maxCharge {
+				continue
 			}
+			topLeftBucket := matrix.get(x-1, y-1)
+			topBucket := matrix.get(x, y-1)
+			leftBucket := matrix.get(x-1, y)
+			var currentBucket *bucket
+			switch {
+			case nil == topBucket && nil == leftBucket:
+				currentBucket = newBucket()
+				groups[currentBucket.group] = struct{}{}
+			case nil == topBucket && nil != leftBucket:
+				currentBucket = leftBucket
+			case (nil != topBucket && nil == leftBucket) ||
+				topBucket == leftBucket ||
+				topBucket.group == leftBucket.group:
+				currentBucket = topBucket
+			default:
+				currentBucket = topBucket
+				delete(groups, topBucket.group)
+				topBucket.group.moveBucketsTo(leftBucket.group)
+			}
+			if nil != topLeftBucket && nil != topBucket && nil != leftBucket {
+				currentBucket.group.wire.isPowerSource = true
+			}
+			matrix.set(x, y, currentBucket)
+			if charge > currentBucket.group.wireState.charge {
+				currentBucket.group.wireState.charge = charge
+			}
+			currentBucket.addPixel(image.Point{x, y})
 		}
 	}
 
@@ -191,7 +195,7 @@ func NewSimulation(img *image.Paletted) *Simulation {
 	for k := range groups {
 		k.wire.index = i
 		wires[i] = k.wire
-		wireStates[i] = wireState{0, k.wire}
+		wireStates[i] = k.wireState
 		i++
 	}
 
@@ -401,6 +405,7 @@ func newBucket() *bucket {
 		buckets: []*bucket{newBucket},
 		wire:    newWire(),
 	}
+	newGroup.wireState = wireState{wire: newGroup.wire, charge: 0}
 	newBucket.group = newGroup
 	return newBucket
 }
@@ -414,8 +419,9 @@ func (b *bucket) addPixel(pixel image.Point) {
 }
 
 type group struct {
-	buckets []*bucket
-	wire    *wire
+	buckets   []*bucket
+	wire      *wire
+	wireState wireState
 }
 
 func (g *group) moveBucketsTo(other *group) {
@@ -425,6 +431,9 @@ func (g *group) moveBucketsTo(other *group) {
 	}
 	if g.wire.isPowerSource {
 		other.wire.isPowerSource = true
+	}
+	if g.wireState.charge > other.wireState.charge {
+		other.wireState.charge = g.wireState.charge
 	}
 	other.wire.bounds = other.wire.bounds.Union(g.wire.bounds)
 	other.wire.pixels = append(other.wire.pixels, g.wire.pixels...)
