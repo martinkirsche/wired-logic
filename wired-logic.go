@@ -145,10 +145,14 @@ func NewSimulation(img *image.Paletted) *Simulation {
 			topLeftBucket := matrix.get(x-1, y-1)
 			if nil == topLeftBucket && nil == topRightBucket && nil == bottomLeftBucket && nil == bottomRightBucket &&
 				nil != topBucket && nil != rightBucket && nil != bottomBucket && nil != leftBucket {
-				delete(groups, topBucket.group)
-				topBucket.group.moveBucketsTo(bottomBucket.group)
-				delete(groups, leftBucket.group)
-				leftBucket.group.moveBucketsTo(rightBucket.group)
+				if topBucket.group != bottomBucket.group {
+					delete(groups, topBucket.group)
+					topBucket.group.moveBucketsTo(bottomBucket.group)
+				}
+				if rightBucket.group != leftBucket.group {
+					delete(groups, rightBucket.group)
+					rightBucket.group.moveBucketsTo(leftBucket.group)
+				}
 			}
 		}
 	}
@@ -425,6 +429,9 @@ type group struct {
 }
 
 func (g *group) moveBucketsTo(other *group) {
+	if g == other {
+		log.Fatal("A group can not be moved to itself.")
+	}
 	for _, bucket := range g.buckets {
 		bucket.group = other
 		other.buckets = append(other.buckets, bucket)
