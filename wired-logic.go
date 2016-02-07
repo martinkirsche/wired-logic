@@ -117,7 +117,7 @@ func NewSimulation(img *image.Paletted) *Simulation {
 			default:
 				currentBucket = topBucket
 				delete(groups, topBucket.group)
-				topBucket.group.moveBucketsTo(leftBucket.group)
+				topBucket.group.moveContentTo(leftBucket.group)
 			}
 			if nil != topLeftBucket && nil != topBucket && nil != leftBucket {
 				currentBucket.group.wire.isPowerSource = true
@@ -147,11 +147,11 @@ func NewSimulation(img *image.Paletted) *Simulation {
 				nil != topBucket && nil != rightBucket && nil != bottomBucket && nil != leftBucket {
 				if topBucket.group != bottomBucket.group {
 					delete(groups, topBucket.group)
-					topBucket.group.moveBucketsTo(bottomBucket.group)
+					topBucket.group.moveContentTo(bottomBucket.group)
 				}
 				if rightBucket.group != leftBucket.group {
 					delete(groups, rightBucket.group)
-					rightBucket.group.moveBucketsTo(leftBucket.group)
+					rightBucket.group.moveContentTo(leftBucket.group)
 				}
 			}
 		}
@@ -428,7 +428,7 @@ type group struct {
 	wireState wireState
 }
 
-func (g *group) moveBucketsTo(other *group) {
+func (g *group) moveContentTo(other *group) {
 	if g == other {
 		log.Fatal("A group can not be moved to itself.")
 	}
