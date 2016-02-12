@@ -1,79 +1,14 @@
-package main
+package simulation
 
 import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
-	"flag"
-	"fmt"
 	"image"
-	"image/color"
-	"image/gif"
 	"log"
-	"os"
 )
 
 const maxCharge = 6
-
-func main() {
-
-	var startFrame int
-	var frameCount int
-	flag.IntVar(&startFrame, "start", 0, "frame at wich the animation should start")
-	flag.IntVar(&frameCount, "count", 0, "amount of frames the animation should have")
-	flag.Parse()
-	inputFileName := flag.Arg(0)
-	outputFileName := flag.Arg(1)
-
-	in, err := os.Open(inputFileName)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	gifImage, err := gif.DecodeAll(in)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	img := gifImage.Image[0]
-
-	log.Println("converting...")
-	simulation := NewSimulation(img)
-
-	log.Println("simulating...")
-
-	for ; startFrame > 0; startFrame-- {
-		simulation = simulation.Step()
-	}
-
-	if 0 == frameCount {
-		simulation, frameCount = simulation.FindLooping()
-	}
-
-	log.Println("rendering...")
-	img.Palette[0] = color.Transparent
-
-	gifImage.Delay = make([]int, frameCount)
-	gifImage.Disposal = make([]byte, frameCount)
-	for i := range gifImage.Delay {
-		gifImage.Delay[i] = 1
-	}
-	gifImage.Image = simulation.DrawAll(img, frameCount)
-
-	log.Println("writing...")
-	out, err := os.Create(outputFileName)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	err = gif.EncodeAll(out, gifImage)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("done.")
-}
 
 type circuit struct {
 	wires       []*wire
@@ -90,7 +25,7 @@ type Simulation struct {
 	states  []wireState
 }
 
-func NewSimulation(img *image.Paletted) *Simulation {
+func New(img *image.Paletted) *Simulation {
 	size := img.Bounds().Size()
 	groups := make(map[*group]struct{}, 0)
 	matrix := newBucketMatrix(size.X, size.Y)

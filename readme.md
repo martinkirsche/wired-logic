@@ -12,7 +12,7 @@ Wired Logic can turn a still image like this…
 How to run it?
 --------------
 
-    go run wired-logic.go input.gif output.gif
+    go run $GOPATH/src/github.com/martinkirsche/wired-logic/apps/gif/main.go input.gif output.gif
     
 How does it work?
 -----------------
