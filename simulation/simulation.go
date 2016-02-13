@@ -8,21 +8,41 @@ import (
 	"log"
 )
 
-const maxCharge = 6
+const MaxCharge = 6
 
-type circuit struct {
-	wires       []*wire
-	transistors []*transistor
+type Circuit struct {
+	wires       []*Wire
+	transistors []*Transistor
 }
 
-type wireState struct {
+func (c *Circuit) Wires() []*Wire {
+	return c.wires
+}
+
+type WireState struct {
 	charge uint8
-	wire   *wire
+	wire   *Wire
+}
+
+func (w WireState) Charge() uint8 {
+	return w.charge
+}
+
+func (w WireState) Wire() *Wire {
+	return w.wire
 }
 
 type Simulation struct {
-	circuit *circuit
-	states  []wireState
+	circuit *Circuit
+	states  []WireState
+}
+
+func (s *Simulation) Circuit() *Circuit {
+	return s.circuit
+}
+
+func (s *Simulation) State(wire *Wire) WireState {
+	return s.states[wire.index]
 }
 
 func New(img *image.Paletted) *Simulation {
@@ -32,7 +52,7 @@ func New(img *image.Paletted) *Simulation {
 	for y := 0; y < size.Y; y++ {
 		for x := 0; x < size.X; x++ {
 			charge := img.ColorIndexAt(x, y) - 1
-			if charge > maxCharge {
+			if charge > MaxCharge {
 				continue
 			}
 			topLeftBucket := matrix.get(x-1, y-1)
@@ -92,7 +112,7 @@ func New(img *image.Paletted) *Simulation {
 		}
 	}
 
-	transistors := make([]*transistor, 0)
+	transistors := make([]*Transistor, 0)
 	for y := 0; y < size.Y; y++ {
 		for x := 0; x < size.X; x++ {
 			if nil != matrix.get(x, y) {
@@ -128,8 +148,8 @@ func New(img *image.Paletted) *Simulation {
 		}
 	}
 
-	wires := make([]*wire, len(groups))
-	wireStates := make([]wireState, len(groups))
+	wires := make([]*Wire, len(groups))
+	wireStates := make([]WireState, len(groups))
 	i := 0
 	for k := range groups {
 		k.wire.index = i
@@ -138,15 +158,15 @@ func New(img *image.Paletted) *Simulation {
 		i++
 	}
 
-	return &Simulation{&circuit{wires: wires, transistors: transistors}, wireStates}
+	return &Simulation{&Circuit{wires: wires, transistors: transistors}, wireStates}
 }
 
 func (s *Simulation) Step() *Simulation {
-	newWireState := make([]wireState, len(s.states))
+	newWireState := make([]WireState, len(s.states))
 	for i, state := range s.states {
 		charge := state.charge
 		if state.wire.isPowerSource {
-			if state.charge < maxCharge {
+			if state.charge < MaxCharge {
 				charge = state.charge + 1
 			}
 		} else {
@@ -157,12 +177,12 @@ func (s *Simulation) Step() *Simulation {
 				charge = state.charge - 1
 			}
 		}
-		newWireState[i] = wireState{charge, state.wire}
+		newWireState[i] = WireState{charge, state.wire}
 	}
 	return &Simulation{s.circuit, newWireState}
 }
 
-func (s *Simulation) tracePowerSource(origin wireState) wireState {
+func (s *Simulation) tracePowerSource(origin WireState) WireState {
 	result := origin
 	for _, transistor := range origin.wire.transistors {
 		if nil != transistor.base && s.states[transistor.base.index].charge > 0 {
@@ -170,7 +190,7 @@ func (s *Simulation) tracePowerSource(origin wireState) wireState {
 		}
 		if origin.wire == transistor.inputA {
 			inputBState := s.states[transistor.inputB.index]
-			if inputBState.charge == maxCharge {
+			if inputBState.charge == MaxCharge {
 				return inputBState
 			}
 			if inputBState.charge > result.charge {
@@ -179,7 +199,7 @@ func (s *Simulation) tracePowerSource(origin wireState) wireState {
 			}
 		} else if origin.wire == transistor.inputB {
 			inputAState := s.states[transistor.inputA.index]
-			if inputAState.charge == maxCharge {
+			if inputAState.charge == MaxCharge {
 				return inputAState
 			}
 			if inputAState.charge > result.charge {
@@ -205,7 +225,7 @@ func (s *Simulation) Draw(img *image.Paletted) {
 		state.wire.draw(img, state.charge+1)
 	}
 	for _, transistor := range s.circuit.transistors {
-		transistor.draw(img, maxCharge+2)
+		transistor.draw(img, MaxCharge+2)
 	}
 }
 
@@ -261,15 +281,31 @@ func (s *Simulation) Hash() []byte {
 	return hash.Sum(nil)
 }
 
-type transistor struct {
+type Transistor struct {
 	position image.Point
-	base     *wire
-	inputA   *wire
-	inputB   *wire
+	base     *Wire
+	inputA   *Wire
+	inputB   *Wire
 }
 
-func newTransistor(position image.Point, base, inputA, inputB *wire) *transistor {
-	transistor := &transistor{
+func (t *Transistor) Position() image.Point {
+	return t.position
+}
+
+func (t *Transistor) Base() *Wire {
+	return t.base
+}
+
+func (t *Transistor) InputA() *Wire {
+	return t.inputA
+}
+
+func (t *Transistor) InputB() *Wire {
+	return t.inputB
+}
+
+func newTransistor(position image.Point, base, inputA, inputB *Wire) *Transistor {
+	transistor := &Transistor{
 		position: position,
 		base:     base,
 		inputA:   inputA,
@@ -280,29 +316,45 @@ func newTransistor(position image.Point, base, inputA, inputB *wire) *transistor
 	return transistor
 }
 
-func (t *transistor) draw(img *image.Paletted, colorIndex uint8) {
+func (t *Transistor) draw(img *image.Paletted, colorIndex uint8) {
 	img.SetColorIndex(t.position.X, t.position.Y, colorIndex)
 }
 
-type wire struct {
+type Wire struct {
 	index         int
 	pixels        []image.Point
 	bounds        image.Rectangle
-	transistors   []*transistor
+	transistors   []*Transistor
 	isPowerSource bool
 }
 
-func newWire() *wire {
-	return &wire{
+func (w *Wire) Pixels() []image.Point {
+	return w.pixels
+}
+
+func (w *Wire) Bounds() image.Rectangle {
+	return w.bounds
+}
+
+func (w *Wire) Transistors() []*Transistor {
+	return w.transistors
+}
+
+func (w *Wire) IsPowerSource() bool {
+	return w.isPowerSource
+}
+
+func newWire() *Wire {
+	return &Wire{
 		index:         -1,
 		pixels:        make([]image.Point, 0),
 		bounds:        image.Rectangle{image.Pt(0, 0), image.Pt(0, 0)},
-		transistors:   make([]*transistor, 0),
+		transistors:   make([]*Transistor, 0),
 		isPowerSource: false,
 	}
 }
 
-func (w *wire) draw(img *image.Paletted, colorIndex uint8) {
+func (w *Wire) draw(img *image.Paletted, colorIndex uint8) {
 	for _, pixel := range w.pixels {
 		img.SetColorIndex(pixel.X, pixel.Y, colorIndex)
 	}
@@ -344,7 +396,7 @@ func newBucket() *bucket {
 		buckets: []*bucket{newBucket},
 		wire:    newWire(),
 	}
-	newGroup.wireState = wireState{wire: newGroup.wire, charge: 0}
+	newGroup.wireState = WireState{wire: newGroup.wire, charge: 0}
 	newBucket.group = newGroup
 	return newBucket
 }
@@ -359,8 +411,8 @@ func (b *bucket) addPixel(pixel image.Point) {
 
 type group struct {
 	buckets   []*bucket
-	wire      *wire
-	wireState wireState
+	wire      *Wire
+	wireState WireState
 }
 
 func (g *group) moveContentTo(other *group) {
