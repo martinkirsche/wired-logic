@@ -224,9 +224,6 @@ func (s *Simulation) Draw(img *image.Paletted) {
 	for _, state := range s.states {
 		state.wire.draw(img, state.charge+1)
 	}
-	for _, transistor := range s.circuit.transistors {
-		transistor.draw(img, MaxCharge+2)
-	}
 }
 
 func (s *Simulation) DrawAll(initialImage *image.Paletted, frameCount int) []*image.Paletted {
@@ -314,10 +311,6 @@ func newTransistor(position image.Point, base, inputA, inputB *Wire) *Transistor
 	inputA.transistors = append(inputA.transistors, transistor)
 	inputB.transistors = append(inputB.transistors, transistor)
 	return transistor
-}
-
-func (t *Transistor) draw(img *image.Paletted, colorIndex uint8) {
-	img.SetColorIndex(t.position.X, t.position.Y, colorIndex)
 }
 
 type Wire struct {
