@@ -196,8 +196,7 @@ func update(screen *ebiten.Image) error {
 		op.GeoM.Translate(float64(position.X), float64(position.Y))
 		r, g, b, a := simulationImage.Palette[charge+1].RGBA()
 		op.ColorM.Scale(float64(r)/0xFFFF, float64(g)/0xFFFF, float64(b)/0xFFFF, float64(a)/0xFFFF)
-		var err error
-		if err = backgroundImage.DrawImage(wireImages[i], op); err != nil {
+		if err := backgroundImage.DrawImage(wireImages[i], op); err != nil {
 			return err
 		}
 	}
