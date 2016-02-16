@@ -13,22 +13,24 @@ import (
 	"github.com/martinkirsche/wired-logic/simulation"
 )
 
-var simulationImage *image.Paletted
-var currentSimulation *simulation.Simulation
-var backgroundImage *ebiten.Image
-var wireImages []*ebiten.Image
-var wasMouseButtonPressed = false
-var cursorBlinking uint8
-var cursorImage *ebiten.Image
-var oldMouseCursorPosition image.Point = image.Point{-1, -1}
-var cursorPosition image.Point = image.Point{-1, -1}
-var keyStates = map[ebiten.Key]int{
-	ebiten.KeyUp:    0,
-	ebiten.KeyDown:  0,
-	ebiten.KeyLeft:  0,
-	ebiten.KeyRight: 0,
-	ebiten.KeySpace: 0,
-}
+var (
+	simulationImage        *image.Paletted
+	currentSimulation      *simulation.Simulation
+	backgroundImage        *ebiten.Image
+	wireImages             []*ebiten.Image
+	wasMouseButtonPressed  = false
+	cursorBlinking         uint8
+	cursorImage            *ebiten.Image
+	oldMouseCursorPosition image.Point = image.Point{-1, -1}
+	cursorPosition         image.Point = image.Point{-1, -1}
+	keyStates                          = map[ebiten.Key]int{
+		ebiten.KeyUp:    0,
+		ebiten.KeyDown:  0,
+		ebiten.KeyLeft:  0,
+		ebiten.KeyRight: 0,
+		ebiten.KeySpace: 0,
+	}
+)
 
 func main() {
 	var err error
