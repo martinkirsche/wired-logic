@@ -26033,7 +26033,7 @@ $packages["github.com/hajimehoshi/ebiten/internal/graphics"] = (function() {
 	return $pkg;
 })();
 $packages["github.com/hajimehoshi/ebiten/internal/ui"] = (function() {
-	var $pkg = {}, $init, js, strconv, time, input, gamePad, userInterface, arrayType, arrayType$1, arrayType$2, structType, funcType, ptrType, funcType$1, ptrType$1, ptrType$2, currentInput, currentInput$24ptr, keyCodeToKey, canvas, currentUI, CursorPosition, IsMouseButtonPressed, Now, ExecOnUIThread, Start, Terminate, DoEvents, IsClosed, SwapBuffers, SetScreenSize, SetScreenScale, shown, vsync, Init, setMouseCursorFromEvent, devicePixelRatio;
+	var $pkg = {}, $init, js, strconv, time, input, gamePad, userInterface, arrayType, arrayType$1, arrayType$2, structType, funcType, ptrType, funcType$1, ptrType$1, ptrType$2, currentInput, currentInput$24ptr, keyCodeToKey, canvas, currentUI, IsKeyPressed, CursorPosition, IsMouseButtonPressed, Now, ExecOnUIThread, Start, Terminate, DoEvents, IsClosed, SwapBuffers, SetScreenSize, SetScreenScale, shown, vsync, Init, setMouseCursorFromEvent, devicePixelRatio;
 	js = $packages["github.com/gopherjs/gopherjs/js"];
 	strconv = $packages["strconv"];
 	time = $packages["time"];
@@ -26082,6 +26082,11 @@ $packages["github.com/hajimehoshi/ebiten/internal/ui"] = (function() {
 	funcType$1 = $funcType([ptrType], [], false);
 	ptrType$1 = $ptrType(input);
 	ptrType$2 = $ptrType(userInterface);
+	IsKeyPressed = function(key) {
+		var $ptr, key, x;
+		return (x = currentInput.keyPressed, ((key < 0 || key >= x.length) ? $throwRuntimeError("index out of range") : x[key]));
+	};
+	$pkg.IsKeyPressed = IsKeyPressed;
 	CursorPosition = function() {
 		var $ptr, _tmp, _tmp$1, x, y;
 		x = 0;
@@ -26527,7 +26532,7 @@ $packages["github.com/hajimehoshi/ebiten/internal/ui"] = (function() {
 	return $pkg;
 })();
 $packages["github.com/hajimehoshi/ebiten"] = (function() {
-	var $pkg = {}, $init, errors, fmt, graphics, opengl, ui, image, color, math, runtime, time, ColorM, GeoM, graphicsContext, Image, DrawImageOptions, ImagePart, ImageParts, imageParts, wholeImage, textureQuads, ptrType, structType, arrayType, arrayType$1, arrayType$2, arrayType$3, ptrType$1, ptrType$2, sliceType, ptrType$3, ptrType$4, sliceType$1, ptrType$5, sliceType$2, funcType, ptrType$6, ptrType$7, ptrType$8, ptrType$9, glContext, runContext, add, mul, glFilter, useGLContext, newGraphicsContext, NewImageFromImage, u, v, init, CursorPosition, IsMouseButtonPressed, Run;
+	var $pkg = {}, $init, errors, fmt, graphics, opengl, ui, image, color, math, runtime, time, ColorM, GeoM, graphicsContext, Image, DrawImageOptions, ImagePart, ImageParts, imageParts, wholeImage, textureQuads, Key, ptrType, structType, arrayType, arrayType$1, arrayType$2, arrayType$3, ptrType$1, ptrType$2, sliceType, ptrType$3, ptrType$4, sliceType$1, ptrType$5, sliceType$2, funcType, ptrType$6, ptrType$7, ptrType$8, ptrType$9, glContext, runContext, add, mul, glFilter, useGLContext, newGraphicsContext, NewImage, NewImageFromImage, u, v, init, IsKeyPressed, CursorPosition, IsMouseButtonPressed, Run;
 	errors = $packages["errors"];
 	fmt = $packages["fmt"];
 	graphics = $packages["github.com/hajimehoshi/ebiten/internal/graphics"];
@@ -26634,6 +26639,7 @@ $packages["github.com/hajimehoshi/ebiten"] = (function() {
 		this.width = width_;
 		this.height = height_;
 	});
+	Key = $pkg.Key = $newType(4, $kindInt, "ebiten.Key", "Key", "github.com/hajimehoshi/ebiten", null);
 	ptrType = $ptrType(opengl.Context);
 	structType = $structType([{prop: "running", name: "running", pkg: "github.com/hajimehoshi/ebiten", typ: $Bool, tag: ""}, {prop: "fps", name: "fps", pkg: "github.com/hajimehoshi/ebiten", typ: $Float64, tag: ""}, {prop: "newScreenWidth", name: "newScreenWidth", pkg: "github.com/hajimehoshi/ebiten", typ: $Int, tag: ""}, {prop: "newScreenHeight", name: "newScreenHeight", pkg: "github.com/hajimehoshi/ebiten", typ: $Int, tag: ""}, {prop: "newScreenScale", name: "newScreenScale", pkg: "github.com/hajimehoshi/ebiten", typ: $Int, tag: ""}]);
 	arrayType = $arrayType($Float64, 5);
@@ -27279,6 +27285,52 @@ $packages["github.com/hajimehoshi/ebiten"] = (function() {
 		/* */ } return; } if ($f === undefined) { $f = { $blk: Image.ptr.prototype.ReplacePixels }; } $f.$ptr = $ptr; $f._r = _r; $f._r$1 = _r$1; $f._tuple = _tuple; $f.err = err; $f.h = h; $f.i = i; $f.l = l; $f.p = p; $f.w = w; $f.$s = $s; $f.$r = $r; return $f;
 	};
 	Image.prototype.ReplacePixels = function(p) { return this.$val.ReplacePixels(p); };
+	NewImage = function(width, height, filter) {
+		var $ptr, _r, err, err$1, filter, height, img, width, $s, $r;
+		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _r = $f._r; err = $f.err; err$1 = $f.err$1; filter = $f.filter; height = $f.height; img = $f.img; width = $f.width; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
+		err = [err];
+		filter = [filter];
+		height = [height];
+		img = [img];
+		width = [width];
+		img[0] = ptrType$1.nil;
+		err[0] = $ifaceNil;
+		$r = useGLContext((function(err, filter, height, img, width) { return function $b(c) {
+			var $ptr, _r, _tuple, _tuple$1, c, framebuffer, texture, $s, $r;
+			/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _r = $f._r; _tuple = $f._tuple; _tuple$1 = $f._tuple$1; c = $f.c; framebuffer = $f.framebuffer; texture = $f.texture; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
+			texture = ptrType$4.nil;
+			framebuffer = ptrType$3.nil;
+			_tuple = graphics.NewTexture(c, width[0], height[0], glFilter(c, filter[0]));
+			texture = _tuple[0];
+			err[0] = _tuple[1];
+			if (!($interfaceIsEqual(err[0], $ifaceNil))) {
+				return;
+			}
+			_r = graphics.NewFramebufferFromTexture(c, texture); /* */ $s = 1; case 1: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
+			_tuple$1 = _r;
+			framebuffer = _tuple$1[0];
+			err[0] = _tuple$1[1];
+			if (!($interfaceIsEqual(err[0], $ifaceNil))) {
+				return;
+			}
+			img[0] = new Image.ptr(framebuffer, texture, sliceType$1.nil, 0, 0);
+			/* */ $s = -1; case -1: } return; } if ($f === undefined) { $f = { $blk: $b }; } $f.$ptr = $ptr; $f._r = _r; $f._tuple = _tuple; $f._tuple$1 = _tuple$1; $f.c = c; $f.framebuffer = framebuffer; $f.texture = texture; $f.$s = $s; $f.$r = $r; return $f;
+		}; })(err, filter, height, img, width)); /* */ $s = 1; case 1: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		if (!($interfaceIsEqual(err[0], $ifaceNil))) {
+			return [ptrType$1.nil, err[0]];
+		}
+		_r = img[0].Clear(); /* */ $s = 2; case 2: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
+		err$1 = _r;
+		/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 3; continue; }
+		/* */ $s = 4; continue;
+		/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 3:
+			return [ptrType$1.nil, err$1];
+		/* } */ case 4:
+		runtime.SetFinalizer(img[0], new funcType($methodExpr(ptrType$1, "Dispose")));
+		return [img[0], $ifaceNil];
+		/* */ } return; } if ($f === undefined) { $f = { $blk: NewImage }; } $f.$ptr = $ptr; $f._r = _r; $f.err = err; $f.err$1 = err$1; $f.filter = filter; $f.height = height; $f.img = img; $f.width = width; $f.$s = $s; $f.$r = $r; return $f;
+	};
+	$pkg.NewImage = NewImage;
 	NewImageFromImage = function(img, filter) {
 		var $ptr, eimg, err, filter, img, $s, $r;
 		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; eimg = $f.eimg; err = $f.err; filter = $f.filter; img = $f.img; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
@@ -27481,6 +27533,11 @@ $packages["github.com/hajimehoshi/ebiten"] = (function() {
 		})); /* */ $s = 2; case 2: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
 		/* */ $s = -1; case -1: } return; } if ($f === undefined) { $f = { $blk: init }; } $f.$ptr = $ptr; $f.$s = $s; $f.$r = $r; return $f;
 	};
+	IsKeyPressed = function(key) {
+		var $ptr, key;
+		return ui.IsKeyPressed((key >> 0));
+	};
+	$pkg.IsKeyPressed = IsKeyPressed;
 	CursorPosition = function() {
 		var $ptr, _tuple, x, y;
 		x = 0;
@@ -30582,7 +30639,7 @@ $packages["image/gif"] = (function() {
 	return $pkg;
 })();
 $packages["main"] = (function() {
-	var $pkg = {}, $init, flag, fmt, ebiten, simulation, image, color, gif, log, os, ptrType, ptrType$1, ptrType$2, sliceType, ptrType$3, sliceType$1, arrayType, arrayType$1, arrayType$2, arrayType$3, sliceType$2, simulationImage, currentSimulation, backgroundImage, oldCursorPosition, wireImages, main, reloadSimulation, togglePixel, update, drawMask;
+	var $pkg = {}, $init, flag, fmt, ebiten, simulation, image, color, gif, log, os, ptrType, ptrType$1, ptrType$2, sliceType, sliceType$1, ptrType$3, arrayType, arrayType$1, arrayType$2, arrayType$3, sliceType$2, simulationImage, currentSimulation, backgroundImage, wireImages, wasMouseButtonPressed, cursorBlinking, cursorImage, oldMouseCursorPosition, cursorPosition, keyStates, main, reloadSimulation, togglePixel, readKeys, handleCursor, update, drawMask;
 	flag = $packages["flag"];
 	fmt = $packages["fmt"];
 	ebiten = $packages["github.com/hajimehoshi/ebiten"];
@@ -30596,70 +30653,83 @@ $packages["main"] = (function() {
 	ptrType$1 = $ptrType(simulation.Simulation);
 	ptrType$2 = $ptrType(ebiten.Image);
 	sliceType = $sliceType(ptrType$2);
-	ptrType$3 = $ptrType($Int);
 	sliceType$1 = $sliceType($emptyInterface);
+	ptrType$3 = $ptrType($Int);
 	arrayType = $arrayType($Float64, 3);
 	arrayType$1 = $arrayType(arrayType, 2);
 	arrayType$2 = $arrayType($Float64, 5);
 	arrayType$3 = $arrayType(arrayType$2, 4);
 	sliceType$2 = $sliceType(ebiten.ImagePart);
 	main = function() {
-		var $ptr, _r, _r$1, _r$2, _r$3, _tmp, _tmp$1, _tmp$2, _tuple, _tuple$1, err, err$1, gifImage, height, in$1, inputFileName, p, scale, width, x, x$1, x$10, x$2, x$3, x$4, x$5, x$6, x$7, x$8, x$9, $s, $r;
-		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _tmp = $f._tmp; _tmp$1 = $f._tmp$1; _tmp$2 = $f._tmp$2; _tuple = $f._tuple; _tuple$1 = $f._tuple$1; err = $f.err; err$1 = $f.err$1; gifImage = $f.gifImage; height = $f.height; in$1 = $f.in$1; inputFileName = $f.inputFileName; p = $f.p; scale = $f.scale; width = $f.width; x = $f.x; x$1 = $f.x$1; x$10 = $f.x$10; x$2 = $f.x$2; x$3 = $f.x$3; x$4 = $f.x$4; x$5 = $f.x$5; x$6 = $f.x$6; x$7 = $f.x$7; x$8 = $f.x$8; x$9 = $f.x$9; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
+		var $ptr, _q, _q$1, _r, _r$1, _r$2, _r$3, _r$4, _r$5, _tmp, _tmp$1, _tmp$2, _tuple, _tuple$1, _tuple$2, err, err$1, err$2, gifImage, height, in$1, inputFileName, p, scale, width, x, x$1, x$10, x$11, x$2, x$3, x$4, x$5, x$6, x$7, x$8, x$9, $s, $r;
+		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _q = $f._q; _q$1 = $f._q$1; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _r$4 = $f._r$4; _r$5 = $f._r$5; _tmp = $f._tmp; _tmp$1 = $f._tmp$1; _tmp$2 = $f._tmp$2; _tuple = $f._tuple; _tuple$1 = $f._tuple$1; _tuple$2 = $f._tuple$2; err = $f.err; err$1 = $f.err$1; err$2 = $f.err$2; gifImage = $f.gifImage; height = $f.height; in$1 = $f.in$1; inputFileName = $f.inputFileName; p = $f.p; scale = $f.scale; width = $f.width; x = $f.x; x$1 = $f.x$1; x$10 = $f.x$10; x$11 = $f.x$11; x$2 = $f.x$2; x$3 = $f.x$3; x$4 = $f.x$4; x$5 = $f.x$5; x$6 = $f.x$6; x$7 = $f.x$7; x$8 = $f.x$8; x$9 = $f.x$9; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
 		height = [height];
 		scale = [scale];
 		width = [width];
+		err = $ifaceNil;
+		_r = ebiten.NewImage(4, 4, 0); /* */ $s = 1; case 1: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
+		_tuple = _r;
+		cursorImage = _tuple[0];
+		err = _tuple[1];
+		/* */ if (!($interfaceIsEqual(err, $ifaceNil))) { $s = 2; continue; }
+		/* */ $s = 3; continue;
+		/* if (!($interfaceIsEqual(err, $ifaceNil))) { */ case 2:
+			$r = log.Fatal(new sliceType$1([err])); /* */ $s = 4; case 4: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		/* } */ case 3:
+		_r$1 = cursorImage.Fill((x = color.White, new x.constructor.elem(x))); /* */ $s = 5; case 5: if($c) { $c = false; _r$1 = _r$1.$blk(); } if (_r$1 && _r$1.$blk !== undefined) { break s; }
+		_r$1;
 		_tmp = 0;
 		_tmp$1 = 0;
 		_tmp$2 = 0;
 		scale[0] = _tmp;
 		width[0] = _tmp$1;
 		height[0] = _tmp$2;
-		$r = flag.IntVar((scale.$ptr || (scale.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, scale))), "scale", 16, "pixel scale factor"); /* */ $s = 1; case 1: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-		$r = flag.IntVar((width.$ptr || (width.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, width))), "width", 64, "width of the simulation"); /* */ $s = 2; case 2: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-		$r = flag.IntVar((height.$ptr || (height.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, height))), "height", 64, "height of the simulation"); /* */ $s = 3; case 3: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-		$r = flag.Parse(); /* */ $s = 4; case 4: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = flag.IntVar((scale.$ptr || (scale.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, scale))), "scale", 16, "pixel scale factor"); /* */ $s = 6; case 6: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = flag.IntVar((width.$ptr || (width.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, width))), "width", 64, "width of the simulation"); /* */ $s = 7; case 7: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = flag.IntVar((height.$ptr || (height.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, height))), "height", 64, "height of the simulation"); /* */ $s = 8; case 8: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = flag.Parse(); /* */ $s = 9; case 9: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
 		flag.Args();
-		/* */ if (flag.NArg() === 1) { $s = 5; continue; }
-		/* */ $s = 6; continue;
-		/* if (flag.NArg() === 1) { */ case 5:
+		image.Point.copy(cursorPosition, new image.Point.ptr((_q = width[0] / 2, (_q === _q && _q !== 1/0 && _q !== -1/0) ? _q >> 0 : $throwRuntimeError("integer divide by zero")), (_q$1 = height[0] / 2, (_q$1 === _q$1 && _q$1 !== 1/0 && _q$1 !== -1/0) ? _q$1 >> 0 : $throwRuntimeError("integer divide by zero"))));
+		/* */ if (flag.NArg() === 1) { $s = 10; continue; }
+		/* */ $s = 11; continue;
+		/* if (flag.NArg() === 1) { */ case 10:
 			inputFileName = flag.Arg(0);
-			_tuple = os.Open(inputFileName);
-			in$1 = _tuple[0];
-			err = _tuple[1];
-			/* */ if (!($interfaceIsEqual(err, $ifaceNil))) { $s = 8; continue; }
-			/* */ $s = 9; continue;
-			/* if (!($interfaceIsEqual(err, $ifaceNil))) { */ case 8:
-				_r = fmt.Println(new sliceType$1([err])); /* */ $s = 10; case 10: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
-				_r;
+			_tuple$1 = os.Open(inputFileName);
+			in$1 = _tuple$1[0];
+			err$1 = _tuple$1[1];
+			/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 13; continue; }
+			/* */ $s = 14; continue;
+			/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 13:
+				_r$2 = fmt.Println(new sliceType$1([err$1])); /* */ $s = 15; case 15: if($c) { $c = false; _r$2 = _r$2.$blk(); } if (_r$2 && _r$2.$blk !== undefined) { break s; }
+				_r$2;
 				os.Exit(1);
-			/* } */ case 9:
-			_r$1 = gif.DecodeAll(in$1); /* */ $s = 11; case 11: if($c) { $c = false; _r$1 = _r$1.$blk(); } if (_r$1 && _r$1.$blk !== undefined) { break s; }
-			_tuple$1 = _r$1;
-			gifImage = _tuple$1[0];
-			err = _tuple$1[1];
-			/* */ if (!($interfaceIsEqual(err, $ifaceNil))) { $s = 12; continue; }
-			/* */ $s = 13; continue;
-			/* if (!($interfaceIsEqual(err, $ifaceNil))) { */ case 12:
-				$r = log.Fatal(new sliceType$1([err])); /* */ $s = 14; case 14: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-			/* } */ case 13:
-			simulationImage = (x = gifImage.Image, (0 >= x.$length ? $throwRuntimeError("index out of range") : x.$array[x.$offset + 0]));
-			(x$2 = simulationImage.Palette, (0 >= x$2.$length ? $throwRuntimeError("index out of range") : x$2.$array[x$2.$offset + 0] = (x$1 = color.Transparent, new x$1.constructor.elem(x$1))));
-			$s = 7; continue;
-		/* } else { */ case 6:
-			p = new color.Palette([(x$3 = color.Black, new x$3.constructor.elem(x$3)), (x$4 = new color.RGBA.ptr(136, 0, 0, 255), new x$4.constructor.elem(x$4)), (x$5 = new color.RGBA.ptr(255, 0, 0, 255), new x$5.constructor.elem(x$5)), (x$6 = new color.RGBA.ptr(255, 34, 0, 255), new x$6.constructor.elem(x$6)), (x$7 = new color.RGBA.ptr(255, 68, 0, 255), new x$7.constructor.elem(x$7)), (x$8 = new color.RGBA.ptr(255, 102, 0, 255), new x$8.constructor.elem(x$8)), (x$9 = new color.RGBA.ptr(255, 136, 0, 255), new x$9.constructor.elem(x$9)), (x$10 = new color.RGBA.ptr(255, 170, 0, 255), new x$10.constructor.elem(x$10))]);
+			/* } */ case 14:
+			_r$3 = gif.DecodeAll(in$1); /* */ $s = 16; case 16: if($c) { $c = false; _r$3 = _r$3.$blk(); } if (_r$3 && _r$3.$blk !== undefined) { break s; }
+			_tuple$2 = _r$3;
+			gifImage = _tuple$2[0];
+			err$1 = _tuple$2[1];
+			/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 17; continue; }
+			/* */ $s = 18; continue;
+			/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 17:
+				$r = log.Fatal(new sliceType$1([err$1])); /* */ $s = 19; case 19: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+			/* } */ case 18:
+			simulationImage = (x$1 = gifImage.Image, (0 >= x$1.$length ? $throwRuntimeError("index out of range") : x$1.$array[x$1.$offset + 0]));
+			(x$3 = simulationImage.Palette, (0 >= x$3.$length ? $throwRuntimeError("index out of range") : x$3.$array[x$3.$offset + 0] = (x$2 = color.Transparent, new x$2.constructor.elem(x$2))));
+			$s = 12; continue;
+		/* } else { */ case 11:
+			p = new color.Palette([(x$4 = color.Black, new x$4.constructor.elem(x$4)), (x$5 = new color.RGBA.ptr(136, 0, 0, 255), new x$5.constructor.elem(x$5)), (x$6 = new color.RGBA.ptr(255, 0, 0, 255), new x$6.constructor.elem(x$6)), (x$7 = new color.RGBA.ptr(255, 34, 0, 255), new x$7.constructor.elem(x$7)), (x$8 = new color.RGBA.ptr(255, 68, 0, 255), new x$8.constructor.elem(x$8)), (x$9 = new color.RGBA.ptr(255, 102, 0, 255), new x$9.constructor.elem(x$9)), (x$10 = new color.RGBA.ptr(255, 136, 0, 255), new x$10.constructor.elem(x$10)), (x$11 = new color.RGBA.ptr(255, 170, 0, 255), new x$11.constructor.elem(x$11))]);
 			simulationImage = image.NewPaletted(image.Rect(0, 0, width[0], height[0]), p);
-		/* } */ case 7:
-		_r$2 = reloadSimulation(); /* */ $s = 15; case 15: if($c) { $c = false; _r$2 = _r$2.$blk(); } if (_r$2 && _r$2.$blk !== undefined) { break s; }
-		_r$2;
-		_r$3 = ebiten.Run(update, simulationImage.Bounds().Dx(), simulationImage.Bounds().Dy(), scale[0], "Wired Logic"); /* */ $s = 16; case 16: if($c) { $c = false; _r$3 = _r$3.$blk(); } if (_r$3 && _r$3.$blk !== undefined) { break s; }
-		err$1 = _r$3;
-		/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 17; continue; }
-		/* */ $s = 18; continue;
-		/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 17:
-			$r = log.Fatal(new sliceType$1([err$1])); /* */ $s = 19; case 19: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-		/* } */ case 18:
-		/* */ $s = -1; case -1: } return; } if ($f === undefined) { $f = { $blk: main }; } $f.$ptr = $ptr; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._tmp = _tmp; $f._tmp$1 = _tmp$1; $f._tmp$2 = _tmp$2; $f._tuple = _tuple; $f._tuple$1 = _tuple$1; $f.err = err; $f.err$1 = err$1; $f.gifImage = gifImage; $f.height = height; $f.in$1 = in$1; $f.inputFileName = inputFileName; $f.p = p; $f.scale = scale; $f.width = width; $f.x = x; $f.x$1 = x$1; $f.x$10 = x$10; $f.x$2 = x$2; $f.x$3 = x$3; $f.x$4 = x$4; $f.x$5 = x$5; $f.x$6 = x$6; $f.x$7 = x$7; $f.x$8 = x$8; $f.x$9 = x$9; $f.$s = $s; $f.$r = $r; return $f;
+		/* } */ case 12:
+		_r$4 = reloadSimulation(); /* */ $s = 20; case 20: if($c) { $c = false; _r$4 = _r$4.$blk(); } if (_r$4 && _r$4.$blk !== undefined) { break s; }
+		_r$4;
+		_r$5 = ebiten.Run(update, simulationImage.Bounds().Dx(), simulationImage.Bounds().Dy(), scale[0], "Wired Logic"); /* */ $s = 21; case 21: if($c) { $c = false; _r$5 = _r$5.$blk(); } if (_r$5 && _r$5.$blk !== undefined) { break s; }
+		err$2 = _r$5;
+		/* */ if (!($interfaceIsEqual(err$2, $ifaceNil))) { $s = 22; continue; }
+		/* */ $s = 23; continue;
+		/* if (!($interfaceIsEqual(err$2, $ifaceNil))) { */ case 22:
+			$r = log.Fatal(new sliceType$1([err$2])); /* */ $s = 24; case 24: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		/* } */ case 23:
+		/* */ $s = -1; case -1: } return; } if ($f === undefined) { $f = { $blk: main }; } $f.$ptr = $ptr; $f._q = _q; $f._q$1 = _q$1; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._r$4 = _r$4; $f._r$5 = _r$5; $f._tmp = _tmp; $f._tmp$1 = _tmp$1; $f._tmp$2 = _tmp$2; $f._tuple = _tuple; $f._tuple$1 = _tuple$1; $f._tuple$2 = _tuple$2; $f.err = err; $f.err$1 = err$1; $f.err$2 = err$2; $f.gifImage = gifImage; $f.height = height; $f.in$1 = in$1; $f.inputFileName = inputFileName; $f.p = p; $f.scale = scale; $f.width = width; $f.x = x; $f.x$1 = x$1; $f.x$10 = x$10; $f.x$11 = x$11; $f.x$2 = x$2; $f.x$3 = x$3; $f.x$4 = x$4; $f.x$5 = x$5; $f.x$6 = x$6; $f.x$7 = x$7; $f.x$8 = x$8; $f.x$9 = x$9; $f.$s = $s; $f.$r = $r; return $f;
 	};
 	reloadSimulation = function() {
 		var $ptr, _i, _i$1, _r, _r$1, _r$2, _r$3, _ref, _ref$1, _tuple, _tuple$1, err, err$1, i, img, img$1, wire, wires, $s, $r;
@@ -30736,77 +30806,151 @@ $packages["main"] = (function() {
 		return $ifaceNil;
 		/* */ } return; } if ($f === undefined) { $f = { $blk: togglePixel }; } $f.$ptr = $ptr; $f._r = _r; $f.c = c; $f.err = err; $f.position = position; $f.$s = $s; $f.$r = $r; return $f;
 	};
-	update = function(screen) {
-		var $ptr, _i, _r, _r$1, _r$2, _r$3, _ref, _tuple, _tuple$1, a, b, charge, err, err$1, err$2, g, i, mx, my, newSimulation, oldCharge, op, position, r, screen, wire, wires, x, x$1, $s, $r;
-		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _i = $f._i; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _ref = $f._ref; _tuple = $f._tuple; _tuple$1 = $f._tuple$1; a = $f.a; b = $f.b; charge = $f.charge; err = $f.err; err$1 = $f.err$1; err$2 = $f.err$2; g = $f.g; i = $f.i; mx = $f.mx; my = $f.my; newSimulation = $f.newSimulation; oldCharge = $f.oldCharge; op = $f.op; position = $f.position; r = $f.r; screen = $f.screen; wire = $f.wire; wires = $f.wires; x = $f.x; x$1 = $f.x$1; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
+	readKeys = function() {
+		var $ptr, _entry, _entry$1, _i, _key, _key$1, _keys, _ref, key;
+		_ref = keyStates;
+		_i = 0;
+		_keys = $keys(_ref);
+		while (true) {
+			if (!(_i < _keys.length)) { break; }
+			_entry = _ref[_keys[_i]];
+			if (_entry === undefined) {
+				_i++;
+				continue;
+			}
+			key = _entry.k;
+			if (!ebiten.IsKeyPressed(key)) {
+				_key = key; (keyStates || $throwRuntimeError("assignment to entry in nil map"))[ebiten.Key.keyFor(_key)] = { k: _key, v: -1 };
+				_i++;
+				continue;
+			}
+			_key$1 = key; (keyStates || $throwRuntimeError("assignment to entry in nil map"))[ebiten.Key.keyFor(_key$1)] = { k: _key$1, v: (_entry$1 = keyStates[ebiten.Key.keyFor(key)], _entry$1 !== undefined ? _entry$1.v : 0) + (1) >> 0 };
+			_i++;
+		}
+	};
+	handleCursor = function(screen) {
+		var $ptr, _entry, _entry$1, _entry$2, _entry$3, _entry$4, _r, _r$1, _r$2, _r$3, _r$4, _r$5, _tuple, cursorMoved, err, err$1, mx, my, op, screen, $s, $r;
+		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _entry = $f._entry; _entry$1 = $f._entry$1; _entry$2 = $f._entry$2; _entry$3 = $f._entry$3; _entry$4 = $f._entry$4; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _r$4 = $f._r$4; _r$5 = $f._r$5; _tuple = $f._tuple; cursorMoved = $f.cursorMoved; err = $f.err; err$1 = $f.err$1; mx = $f.mx; my = $f.my; op = $f.op; screen = $f.screen; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
 		_tuple = ebiten.CursorPosition();
 		mx = _tuple[0];
 		my = _tuple[1];
-		/* */ if (ebiten.IsMouseButtonPressed(0)) { $s = 1; continue; }
-		/* */ $s = 2; continue;
-		/* if (ebiten.IsMouseButtonPressed(0)) { */ case 1:
-			/* */ if (!((mx === oldCursorPosition.X)) || !((my === oldCursorPosition.Y))) { $s = 4; continue; }
-			/* */ $s = 5; continue;
-			/* if (!((mx === oldCursorPosition.X)) || !((my === oldCursorPosition.Y))) { */ case 4:
-				image.Point.copy(oldCursorPosition, new image.Point.ptr(mx, my));
-				_r = togglePixel(oldCursorPosition); /* */ $s = 6; case 6: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
-				err = _r;
-				/* */ if (!($interfaceIsEqual(err, $ifaceNil))) { $s = 7; continue; }
-				/* */ $s = 8; continue;
-				/* if (!($interfaceIsEqual(err, $ifaceNil))) { */ case 7:
-					return err;
-				/* } */ case 8:
-			/* } */ case 5:
-			$s = 3; continue;
-		/* } else { */ case 2:
-			image.Point.copy(oldCursorPosition, new image.Point.ptr(-1, -1));
+		cursorMoved = new image.Point.ptr(mx, my).In(screen.Bounds()) && (!((mx === oldMouseCursorPosition.X)) || !((my === oldMouseCursorPosition.Y)));
+		image.Point.copy(oldMouseCursorPosition, new image.Point.ptr(mx, my));
+		if (cursorMoved) {
+			image.Point.copy(cursorPosition, oldMouseCursorPosition);
+		} else {
+			if ((_r = (_entry = keyStates[ebiten.Key.keyFor(68)], _entry !== undefined ? _entry.v : 0) % 6, _r === _r ? _r : $throwRuntimeError("integer divide by zero")) === 0) {
+				image.Point.copy(cursorPosition, cursorPosition.Add(new image.Point.ptr(0, -1)));
+				cursorMoved = true;
+			} else if ((_r$1 = (_entry$1 = keyStates[ebiten.Key.keyFor(42)], _entry$1 !== undefined ? _entry$1.v : 0) % 6, _r$1 === _r$1 ? _r$1 : $throwRuntimeError("integer divide by zero")) === 0) {
+				image.Point.copy(cursorPosition, cursorPosition.Add(new image.Point.ptr(0, 1)));
+				cursorMoved = true;
+			} else if ((_r$2 = (_entry$2 = keyStates[ebiten.Key.keyFor(60)], _entry$2 !== undefined ? _entry$2.v : 0) % 6, _r$2 === _r$2 ? _r$2 : $throwRuntimeError("integer divide by zero")) === 0) {
+				image.Point.copy(cursorPosition, cursorPosition.Add(new image.Point.ptr(-1, 0)));
+				cursorMoved = true;
+			} else if ((_r$3 = (_entry$3 = keyStates[ebiten.Key.keyFor(64)], _entry$3 !== undefined ? _entry$3.v : 0) % 6, _r$3 === _r$3 ? _r$3 : $throwRuntimeError("integer divide by zero")) === 0) {
+				image.Point.copy(cursorPosition, cursorPosition.Add(new image.Point.ptr(1, 0)));
+				cursorMoved = true;
+			}
+		}
+		if (cursorBlinking === 127) {
+			cursorBlinking = 0;
+		} else {
+			cursorBlinking = cursorBlinking + (1) << 24 >>> 24;
+		}
+		op = new ebiten.DrawImageOptions.ptr($ifaceNil, new ebiten.GeoM.ptr(false, arrayType$1.zero()), new ebiten.ColorM.ptr(false, arrayType$3.zero()), sliceType$2.nil);
+		op.GeoM.Scale(0.25, 0.25);
+		op.GeoM.Translate(cursorPosition.X, cursorPosition.Y);
+		if (cursorBlinking > 64) {
+			op.ColorM.Scale(1, 1, 1, 0.25 + (127 - cursorBlinking << 24 >>> 24) / 255);
+		} else {
+			op.ColorM.Scale(1, 1, 1, 0.25 + cursorBlinking / 255);
+		}
+		_r$4 = screen.DrawImage(cursorImage, op); /* */ $s = 1; case 1: if($c) { $c = false; _r$4 = _r$4.$blk(); } if (_r$4 && _r$4.$blk !== undefined) { break s; }
+		err = _r$4;
+		/* */ if (!($interfaceIsEqual(err, $ifaceNil))) { $s = 2; continue; }
+		/* */ $s = 3; continue;
+		/* if (!($interfaceIsEqual(err, $ifaceNil))) { */ case 2:
+			return err;
 		/* } */ case 3:
+		/* */ if ((_entry$4 = keyStates[ebiten.Key.keyFor(66)], _entry$4 !== undefined ? _entry$4.v : 0) >= 0 || ebiten.IsMouseButtonPressed(0)) { $s = 4; continue; }
+		/* */ $s = 5; continue;
+		/* if ((_entry$4 = keyStates[ebiten.Key.keyFor(66)], _entry$4 !== undefined ? _entry$4.v : 0) >= 0 || ebiten.IsMouseButtonPressed(0)) { */ case 4:
+			/* */ if (cursorMoved || !wasMouseButtonPressed) { $s = 7; continue; }
+			/* */ $s = 8; continue;
+			/* if (cursorMoved || !wasMouseButtonPressed) { */ case 7:
+				_r$5 = togglePixel(cursorPosition); /* */ $s = 9; case 9: if($c) { $c = false; _r$5 = _r$5.$blk(); } if (_r$5 && _r$5.$blk !== undefined) { break s; }
+				err$1 = _r$5;
+				/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 10; continue; }
+				/* */ $s = 11; continue;
+				/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 10:
+					return err$1;
+				/* } */ case 11:
+				wasMouseButtonPressed = true;
+			/* } */ case 8:
+			$s = 6; continue;
+		/* } else { */ case 5:
+			wasMouseButtonPressed = false;
+		/* } */ case 6:
+		return $ifaceNil;
+		/* */ } return; } if ($f === undefined) { $f = { $blk: handleCursor }; } $f.$ptr = $ptr; $f._entry = _entry; $f._entry$1 = _entry$1; $f._entry$2 = _entry$2; $f._entry$3 = _entry$3; $f._entry$4 = _entry$4; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._r$4 = _r$4; $f._r$5 = _r$5; $f._tuple = _tuple; $f.cursorMoved = cursorMoved; $f.err = err; $f.err$1 = err$1; $f.mx = mx; $f.my = my; $f.op = op; $f.screen = screen; $f.$s = $s; $f.$r = $r; return $f;
+	};
+	update = function(screen) {
+		var $ptr, _i, _r, _r$1, _r$2, _r$3, _ref, _tuple, a, b, charge, err, err$1, err$2, g, i, newSimulation, oldCharge, op, position, r, screen, wire, wires, x, x$1, $s, $r;
+		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _i = $f._i; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _ref = $f._ref; _tuple = $f._tuple; a = $f.a; b = $f.b; charge = $f.charge; err = $f.err; err$1 = $f.err$1; err$2 = $f.err$2; g = $f.g; i = $f.i; newSimulation = $f.newSimulation; oldCharge = $f.oldCharge; op = $f.op; position = $f.position; r = $f.r; screen = $f.screen; wire = $f.wire; wires = $f.wires; x = $f.x; x$1 = $f.x$1; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
+		readKeys();
 		newSimulation = currentSimulation.Step();
 		wires = currentSimulation.Circuit().Wires();
 		_ref = wires;
 		_i = 0;
-		/* while (true) { */ case 9:
-			/* if (!(_i < _ref.$length)) { break; } */ if(!(_i < _ref.$length)) { $s = 10; continue; }
+		/* while (true) { */ case 1:
+			/* if (!(_i < _ref.$length)) { break; } */ if(!(_i < _ref.$length)) { $s = 2; continue; }
 			i = _i;
 			wire = ((_i < 0 || _i >= _ref.$length) ? $throwRuntimeError("index out of range") : _ref.$array[_ref.$offset + _i]);
 			oldCharge = currentSimulation.State(wire).Charge();
 			charge = newSimulation.State(wire).Charge();
-			/* */ if (oldCharge === charge) { $s = 11; continue; }
-			/* */ $s = 12; continue;
-			/* if (oldCharge === charge) { */ case 11:
+			/* */ if (oldCharge === charge) { $s = 3; continue; }
+			/* */ $s = 4; continue;
+			/* if (oldCharge === charge) { */ case 3:
 				_i++;
-				/* continue; */ $s = 9; continue;
-			/* } */ case 12:
+				/* continue; */ $s = 1; continue;
+			/* } */ case 4:
 			position = $clone(wire.Bounds().Min, image.Point);
 			op = new ebiten.DrawImageOptions.ptr($ifaceNil, new ebiten.GeoM.ptr(false, arrayType$1.zero()), new ebiten.ColorM.ptr(false, arrayType$3.zero()), sliceType$2.nil);
 			op.GeoM.Translate(position.X, position.Y);
-			_r$1 = (x = simulationImage.Palette, x$1 = charge + 1 << 24 >>> 24, ((x$1 < 0 || x$1 >= x.$length) ? $throwRuntimeError("index out of range") : x.$array[x.$offset + x$1])).RGBA(); /* */ $s = 13; case 13: if($c) { $c = false; _r$1 = _r$1.$blk(); } if (_r$1 && _r$1.$blk !== undefined) { break s; }
-			_tuple$1 = _r$1;
-			r = _tuple$1[0];
-			g = _tuple$1[1];
-			b = _tuple$1[2];
-			a = _tuple$1[3];
+			_r = (x = simulationImage.Palette, x$1 = charge + 1 << 24 >>> 24, ((x$1 < 0 || x$1 >= x.$length) ? $throwRuntimeError("index out of range") : x.$array[x.$offset + x$1])).RGBA(); /* */ $s = 5; case 5: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
+			_tuple = _r;
+			r = _tuple[0];
+			g = _tuple[1];
+			b = _tuple[2];
+			a = _tuple[3];
 			op.ColorM.Scale(r / 65535, g / 65535, b / 65535, a / 65535);
-			err$1 = $ifaceNil;
-			_r$2 = backgroundImage.DrawImage(((i < 0 || i >= wireImages.$length) ? $throwRuntimeError("index out of range") : wireImages.$array[wireImages.$offset + i]), op); /* */ $s = 14; case 14: if($c) { $c = false; _r$2 = _r$2.$blk(); } if (_r$2 && _r$2.$blk !== undefined) { break s; }
-			err$1 = _r$2;
-			/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 15; continue; }
-			/* */ $s = 16; continue;
-			/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 15:
-				return err$1;
-			/* } */ case 16:
+			_r$1 = backgroundImage.DrawImage(((i < 0 || i >= wireImages.$length) ? $throwRuntimeError("index out of range") : wireImages.$array[wireImages.$offset + i]), op); /* */ $s = 6; case 6: if($c) { $c = false; _r$1 = _r$1.$blk(); } if (_r$1 && _r$1.$blk !== undefined) { break s; }
+			err = _r$1;
+			/* */ if (!($interfaceIsEqual(err, $ifaceNil))) { $s = 7; continue; }
+			/* */ $s = 8; continue;
+			/* if (!($interfaceIsEqual(err, $ifaceNil))) { */ case 7:
+				return err;
+			/* } */ case 8:
 			_i++;
-		/* } */ $s = 9; continue; case 10:
+		/* } */ $s = 1; continue; case 2:
 		currentSimulation = newSimulation;
-		_r$3 = screen.DrawImage(backgroundImage, new ebiten.DrawImageOptions.ptr($ifaceNil, new ebiten.GeoM.ptr(false, arrayType$1.zero()), new ebiten.ColorM.ptr(false, arrayType$3.zero()), sliceType$2.nil)); /* */ $s = 17; case 17: if($c) { $c = false; _r$3 = _r$3.$blk(); } if (_r$3 && _r$3.$blk !== undefined) { break s; }
+		_r$2 = screen.DrawImage(backgroundImage, new ebiten.DrawImageOptions.ptr($ifaceNil, new ebiten.GeoM.ptr(false, arrayType$1.zero()), new ebiten.ColorM.ptr(false, arrayType$3.zero()), sliceType$2.nil)); /* */ $s = 9; case 9: if($c) { $c = false; _r$2 = _r$2.$blk(); } if (_r$2 && _r$2.$blk !== undefined) { break s; }
+		err$1 = _r$2;
+		/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 10; continue; }
+		/* */ $s = 11; continue;
+		/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 10:
+			return err$1;
+		/* } */ case 11:
+		_r$3 = handleCursor(screen); /* */ $s = 12; case 12: if($c) { $c = false; _r$3 = _r$3.$blk(); } if (_r$3 && _r$3.$blk !== undefined) { break s; }
 		err$2 = _r$3;
-		/* */ if (!($interfaceIsEqual(err$2, $ifaceNil))) { $s = 18; continue; }
-		/* */ $s = 19; continue;
-		/* if (!($interfaceIsEqual(err$2, $ifaceNil))) { */ case 18:
+		/* */ if (!($interfaceIsEqual(err$2, $ifaceNil))) { $s = 13; continue; }
+		/* */ $s = 14; continue;
+		/* if (!($interfaceIsEqual(err$2, $ifaceNil))) { */ case 13:
 			return err$2;
-		/* } */ case 19:
+		/* } */ case 14:
 		return $ifaceNil;
-		/* */ } return; } if ($f === undefined) { $f = { $blk: update }; } $f.$ptr = $ptr; $f._i = _i; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._ref = _ref; $f._tuple = _tuple; $f._tuple$1 = _tuple$1; $f.a = a; $f.b = b; $f.charge = charge; $f.err = err; $f.err$1 = err$1; $f.err$2 = err$2; $f.g = g; $f.i = i; $f.mx = mx; $f.my = my; $f.newSimulation = newSimulation; $f.oldCharge = oldCharge; $f.op = op; $f.position = position; $f.r = r; $f.screen = screen; $f.wire = wire; $f.wires = wires; $f.x = x; $f.x$1 = x$1; $f.$s = $s; $f.$r = $r; return $f;
+		/* */ } return; } if ($f === undefined) { $f = { $blk: update }; } $f.$ptr = $ptr; $f._i = _i; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._ref = _ref; $f._tuple = _tuple; $f.a = a; $f.b = b; $f.charge = charge; $f.err = err; $f.err$1 = err$1; $f.err$2 = err$2; $f.g = g; $f.i = i; $f.newSimulation = newSimulation; $f.oldCharge = oldCharge; $f.op = op; $f.position = position; $f.r = r; $f.screen = screen; $f.wire = wire; $f.wires = wires; $f.x = x; $f.x$1 = x$1; $f.$s = $s; $f.$r = $r; return $f;
 	};
 	drawMask = function(wire) {
 		var $ptr, _i, _ref, bounds, img, pixel, position, white, wire;
@@ -30841,7 +30985,12 @@ $packages["main"] = (function() {
 		currentSimulation = ptrType$1.nil;
 		backgroundImage = ptrType$2.nil;
 		wireImages = sliceType.nil;
-		oldCursorPosition = new image.Point.ptr(-1, -1);
+		cursorBlinking = 0;
+		cursorImage = ptrType$2.nil;
+		wasMouseButtonPressed = false;
+		oldMouseCursorPosition = new image.Point.ptr(-1, -1);
+		cursorPosition = new image.Point.ptr(-1, -1);
+		keyStates = $makeMap(ebiten.Key.keyFor, [{ k: 68, v: 0 }, { k: 42, v: 0 }, { k: 60, v: 0 }, { k: 64, v: 0 }, { k: 66, v: 0 }]);
 		/* */ if ($pkg === $mainPkg) { $s = 10; continue; }
 		/* */ $s = 11; continue;
 		/* if ($pkg === $mainPkg) { */ case 10:
