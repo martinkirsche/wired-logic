@@ -18,8 +18,15 @@ var currentSimulation *simulation.Simulation
 var backgroundImage *ebiten.Image
 var oldCursorPosition image.Point = image.Point{-1, -1}
 var wireImages []*ebiten.Image
+var cursorBlinking uint8
+var cursorImage *ebiten.Image
 
 func main() {
+	var err error
+	if cursorImage, err = ebiten.NewImage(4, 4, ebiten.FilterNearest); err != nil {
+		log.Fatal(err)
+	}
+	cursorImage.Fill(color.White)
 	var scale, width, height int
 	flag.IntVar(&scale, "scale", 16, "pixel scale factor")
 	flag.IntVar(&width, "width", 64, "width of the simulation")
@@ -98,8 +105,24 @@ func togglePixel(position image.Point) error {
 	return nil
 }
 
-func update(screen *ebiten.Image) error {
+func handleCursor(screen *ebiten.Image) error {
 	mx, my := ebiten.CursorPosition()
+	if cursorBlinking == 127 {
+		cursorBlinking = 0
+	} else {
+		cursorBlinking++
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(0.25, .25)
+	op.GeoM.Translate(float64(mx), float64(my))
+	if cursorBlinking > 64 {
+		op.ColorM.Scale(1, 1, 1, 0.25+float64(127-cursorBlinking)/255.0)
+	} else {
+		op.ColorM.Scale(1, 1, 1, 0.25+float64(cursorBlinking)/255.0)
+	}
+	if err := screen.DrawImage(cursorImage, op); err != nil {
+		return err
+	}
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		if mx != oldCursorPosition.X || my != oldCursorPosition.Y {
 			oldCursorPosition = image.Point{mx, my}
@@ -110,7 +133,10 @@ func update(screen *ebiten.Image) error {
 	} else {
 		oldCursorPosition = image.Point{-1, -1}
 	}
+	return nil
+}
 
+func update(screen *ebiten.Image) error {
 	newSimulation := currentSimulation.Step()
 	wires := currentSimulation.Circuit().Wires()
 	for i, wire := range wires {
@@ -131,6 +157,10 @@ func update(screen *ebiten.Image) error {
 	}
 	currentSimulation = newSimulation
 	if err := screen.DrawImage(backgroundImage, &ebiten.DrawImageOptions{}); err != nil {
+		return err
+	}
+
+	if err := handleCursor(screen); err != nil {
 		return err
 	}
 	return nil
