@@ -16,10 +16,19 @@ import (
 var simulationImage *image.Paletted
 var currentSimulation *simulation.Simulation
 var backgroundImage *ebiten.Image
-var oldCursorPosition image.Point = image.Point{-1, -1}
 var wireImages []*ebiten.Image
+var wasMouseButtonPressed = false
 var cursorBlinking uint8
 var cursorImage *ebiten.Image
+var oldMouseCursorPosition image.Point = image.Point{-1, -1}
+var cursorPosition image.Point = image.Point{-1, -1}
+var keyStates = map[ebiten.Key]int{
+	ebiten.KeyUp:    0,
+	ebiten.KeyDown:  0,
+	ebiten.KeyLeft:  0,
+	ebiten.KeyRight: 0,
+	ebiten.KeySpace: 0,
+}
 
 func main() {
 	var err error
@@ -34,6 +43,7 @@ func main() {
 	flag.Parse()
 	flag.Args()
 
+	cursorPosition = image.Point{width / 2, height / 2}
 	if flag.NArg() == 1 {
 		inputFileName := flag.Arg(0)
 		in, err := os.Open(inputFileName)
@@ -105,8 +115,40 @@ func togglePixel(position image.Point) error {
 	return nil
 }
 
+func readKeys() {
+	for key, _ := range keyStates {
+		if !ebiten.IsKeyPressed(key) {
+			keyStates[key] = -1
+			continue
+		}
+		keyStates[key]++
+
+	}
+}
+
 func handleCursor(screen *ebiten.Image) error {
 	mx, my := ebiten.CursorPosition()
+	cursorMoved := image.Point{mx, my}.In(screen.Bounds()) && (mx != oldMouseCursorPosition.X || my != oldMouseCursorPosition.Y)
+	oldMouseCursorPosition = image.Point{mx, my}
+	if cursorMoved {
+		cursorPosition = oldMouseCursorPosition
+	} else {
+		const cursorInterval = 6
+		switch {
+		case keyStates[ebiten.KeyUp]%cursorInterval == 0:
+			cursorPosition = cursorPosition.Add(image.Point{0, -1})
+			cursorMoved = true
+		case keyStates[ebiten.KeyDown]%cursorInterval == 0:
+			cursorPosition = cursorPosition.Add(image.Point{0, +1})
+			cursorMoved = true
+		case keyStates[ebiten.KeyLeft]%cursorInterval == 0:
+			cursorPosition = cursorPosition.Add(image.Point{-1, 0})
+			cursorMoved = true
+		case keyStates[ebiten.KeyRight]%cursorInterval == 0:
+			cursorPosition = cursorPosition.Add(image.Point{+1, 0})
+			cursorMoved = true
+		}
+	}
 	if cursorBlinking == 127 {
 		cursorBlinking = 0
 	} else {
@@ -114,7 +156,7 @@ func handleCursor(screen *ebiten.Image) error {
 	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(0.25, .25)
-	op.GeoM.Translate(float64(mx), float64(my))
+	op.GeoM.Translate(float64(cursorPosition.X), float64(cursorPosition.Y))
 	if cursorBlinking > 64 {
 		op.ColorM.Scale(1, 1, 1, 0.25+float64(127-cursorBlinking)/255.0)
 	} else {
@@ -123,20 +165,22 @@ func handleCursor(screen *ebiten.Image) error {
 	if err := screen.DrawImage(cursorImage, op); err != nil {
 		return err
 	}
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		if mx != oldCursorPosition.X || my != oldCursorPosition.Y {
-			oldCursorPosition = image.Point{mx, my}
-			if err := togglePixel(oldCursorPosition); err != nil {
+	if keyStates[ebiten.KeySpace] >= 0 ||
+		ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		if cursorMoved || !wasMouseButtonPressed {
+			if err := togglePixel(cursorPosition); err != nil {
 				return err
 			}
+			wasMouseButtonPressed = true
 		}
 	} else {
-		oldCursorPosition = image.Point{-1, -1}
+		wasMouseButtonPressed = false
 	}
 	return nil
 }
 
 func update(screen *ebiten.Image) error {
+	readKeys()
 	newSimulation := currentSimulation.Step()
 	wires := currentSimulation.Circuit().Wires()
 	for i, wire := range wires {
