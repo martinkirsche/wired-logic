@@ -8,12 +8,14 @@ import (
 	"image/gif"
 	"log"
 	"os"
+	"time"
 
 	"github.com/hajimehoshi/ebiten"
 	"github.com/martinkirsche/wired-logic/simulation"
 )
 
 var (
+	simulationTimer        <-chan time.Time
 	simulationImage        *image.Paletted
 	currentSimulation      *simulation.Simulation
 	backgroundImage        *ebiten.Image
@@ -38,7 +40,8 @@ func main() {
 		log.Fatal(err)
 	}
 	cursorImage.Fill(color.White)
-	var scale, width, height int
+	var speed, scale, width, height int
+	flag.IntVar(&speed, "speed", 15, "simulation steps per second")
 	flag.IntVar(&scale, "scale", 16, "pixel scale factor")
 	flag.IntVar(&width, "width", 64, "width of the simulation")
 	flag.IntVar(&height, "height", 64, "height of the simulation")
@@ -46,6 +49,7 @@ func main() {
 	flag.Args()
 
 	cursorPosition = image.Point{width / 2, height / 2}
+	simulationTimer = time.Tick(time.Second / time.Duration(speed))
 	if flag.NArg() == 1 {
 		inputFileName := flag.Arg(0)
 		in, err := os.Open(inputFileName)
@@ -183,24 +187,29 @@ func handleCursor(screen *ebiten.Image) error {
 
 func update(screen *ebiten.Image) error {
 	readKeys()
-	newSimulation := currentSimulation.Step()
-	wires := currentSimulation.Circuit().Wires()
-	for i, wire := range wires {
-		oldCharge := currentSimulation.State(wire).Charge()
-		charge := newSimulation.State(wire).Charge()
-		if oldCharge == charge {
-			continue
+	select {
+	case <-simulationTimer:
+		newSimulation := currentSimulation.Step()
+		wires := currentSimulation.Circuit().Wires()
+		for i, wire := range wires {
+			oldCharge := currentSimulation.State(wire).Charge()
+			charge := newSimulation.State(wire).Charge()
+			if oldCharge == charge {
+				continue
+			}
+			position := wire.Bounds().Min
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Translate(float64(position.X), float64(position.Y))
+			r, g, b, a := simulationImage.Palette[charge+1].RGBA()
+			op.ColorM.Scale(float64(r)/0xFFFF, float64(g)/0xFFFF, float64(b)/0xFFFF, float64(a)/0xFFFF)
+			if err := backgroundImage.DrawImage(wireImages[i], op); err != nil {
+				return err
+			}
 		}
-		position := wire.Bounds().Min
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(float64(position.X), float64(position.Y))
-		r, g, b, a := simulationImage.Palette[charge+1].RGBA()
-		op.ColorM.Scale(float64(r)/0xFFFF, float64(g)/0xFFFF, float64(b)/0xFFFF, float64(a)/0xFFFF)
-		if err := backgroundImage.DrawImage(wireImages[i], op); err != nil {
-			return err
-		}
+		currentSimulation = newSimulation
+	default:
 	}
-	currentSimulation = newSimulation
+
 	if err := screen.DrawImage(backgroundImage, &ebiten.DrawImageOptions{}); err != nil {
 		return err
 	}
