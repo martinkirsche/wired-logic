@@ -5258,13 +5258,33 @@ $packages["strings"] = (function() {
 	return $pkg;
 })();
 $packages["time"] = (function() {
-	var $pkg = {}, $init, errors, js, nosync, runtime, strings, syscall, ParseError, Time, Month, Weekday, Duration, Location, zone, zoneTrans, sliceType, sliceType$1, ptrType, sliceType$2, arrayType, sliceType$3, arrayType$1, arrayType$2, ptrType$1, arrayType$4, ptrType$3, ptrType$6, std0x, longDayNames, shortDayNames, shortMonthNames, longMonthNames, atoiError, errBad, errLeadingInt, unitMap, months, days, daysBefore, utcLoc, utcLoc$24ptr, localLoc, localLoc$24ptr, localOnce, zoneinfo, badData, _tuple, _r, init, initLocal, runtimeNano, now, startsWithLowerCase, nextStdChunk, match, lookup, appendInt, atoi, formatNano, quote, isDigit, getnum, cutspace, skip, Parse, parse, parseTimeZone, parseGMT, parseNanoseconds, leadingInt, ParseDuration, absWeekday, absClock, fmtFrac, fmtInt, absDate, Now, Unix, isLeap, norm, Date, div, FixedZone;
+	var $pkg = {}, $init, errors, js, nosync, runtime, strings, syscall, runtimeTimer, ParseError, Ticker, Time, Month, Weekday, Duration, Location, zone, zoneTrans, sliceType, sliceType$1, ptrType, sliceType$2, arrayType, sliceType$3, arrayType$1, arrayType$2, ptrType$1, chanType, arrayType$4, funcType$1, ptrType$2, ptrType$3, chanType$1, ptrType$5, ptrType$6, std0x, longDayNames, shortDayNames, shortMonthNames, longMonthNames, atoiError, errBad, errLeadingInt, unitMap, months, days, daysBefore, utcLoc, utcLoc$24ptr, localLoc, localLoc$24ptr, localOnce, zoneinfo, badData, _tuple, _r, init, initLocal, runtimeNano, now, startTimer, stopTimer, startsWithLowerCase, nextStdChunk, match, lookup, appendInt, atoi, formatNano, quote, isDigit, getnum, cutspace, skip, Parse, parse, parseTimeZone, parseGMT, parseNanoseconds, leadingInt, ParseDuration, when, sendTime, NewTicker, Tick, absWeekday, absClock, fmtFrac, fmtInt, absDate, Now, Unix, isLeap, norm, Date, div, FixedZone;
 	errors = $packages["errors"];
 	js = $packages["github.com/gopherjs/gopherjs/js"];
 	nosync = $packages["github.com/gopherjs/gopherjs/nosync"];
 	runtime = $packages["runtime"];
 	strings = $packages["strings"];
 	syscall = $packages["syscall"];
+	runtimeTimer = $pkg.runtimeTimer = $newType(0, $kindStruct, "time.runtimeTimer", "runtimeTimer", "time", function(i_, when_, period_, f_, arg_, timeout_, active_) {
+		this.$val = this;
+		if (arguments.length === 0) {
+			this.i = 0;
+			this.when = new $Int64(0, 0);
+			this.period = new $Int64(0, 0);
+			this.f = $throwNilPointerError;
+			this.arg = $ifaceNil;
+			this.timeout = null;
+			this.active = false;
+			return;
+		}
+		this.i = i_;
+		this.when = when_;
+		this.period = period_;
+		this.f = f_;
+		this.arg = arg_;
+		this.timeout = timeout_;
+		this.active = active_;
+	});
 	ParseError = $pkg.ParseError = $newType(0, $kindStruct, "time.ParseError", "ParseError", "time", function(Layout_, Value_, LayoutElem_, ValueElem_, Message_) {
 		this.$val = this;
 		if (arguments.length === 0) {
@@ -5280,6 +5300,16 @@ $packages["time"] = (function() {
 		this.LayoutElem = LayoutElem_;
 		this.ValueElem = ValueElem_;
 		this.Message = Message_;
+	});
+	Ticker = $pkg.Ticker = $newType(0, $kindStruct, "time.Ticker", "Ticker", "time", function(C_, r_) {
+		this.$val = this;
+		if (arguments.length === 0) {
+			this.C = $chanNil;
+			this.r = new runtimeTimer.ptr(0, new $Int64(0, 0), new $Int64(0, 0), $throwNilPointerError, $ifaceNil, null, false);
+			return;
+		}
+		this.C = C_;
+		this.r = r_;
 	});
 	Time = $pkg.Time = $newType(0, $kindStruct, "time.Time", "Time", "time", function(sec_, nsec_, loc_) {
 		this.$val = this;
@@ -5349,8 +5379,13 @@ $packages["time"] = (function() {
 	arrayType$1 = $arrayType($Uint8, 9);
 	arrayType$2 = $arrayType($Uint8, 64);
 	ptrType$1 = $ptrType(Location);
+	chanType = $chanType(Time, false, false);
 	arrayType$4 = $arrayType($Uint8, 32);
+	funcType$1 = $funcType([$emptyInterface, $Uintptr], [], false);
+	ptrType$2 = $ptrType(js.Object);
 	ptrType$3 = $ptrType(ParseError);
+	chanType$1 = $chanType(Time, false, true);
+	ptrType$5 = $ptrType(Ticker);
 	ptrType$6 = $ptrType(Time);
 	init = function() {
 		var $ptr;
@@ -5383,6 +5418,33 @@ $packages["time"] = (function() {
 		sec = _tmp;
 		nsec = _tmp$1;
 		return [sec, nsec];
+	};
+	startTimer = function(t) {
+		var $ptr, diff, t, x, x$1;
+		t.active = true;
+		diff = $div64(((x = t.when, x$1 = runtimeNano(), new $Int64(x.$high - x$1.$high, x.$low - x$1.$low))), new $Int64(0, 1000000), false);
+		if ((diff.$high > 0 || (diff.$high === 0 && diff.$low > 2147483647))) {
+			return;
+		}
+		if ((diff.$high < 0 || (diff.$high === 0 && diff.$low < 0))) {
+			diff = new $Int64(0, 0);
+		}
+		t.timeout = $setTimeout((function() {
+			var $ptr, x$2, x$3, x$4;
+			t.active = false;
+			$go(t.f, [t.arg, 0]);
+			if (!((x$2 = t.period, (x$2.$high === 0 && x$2.$low === 0)))) {
+				t.when = (x$3 = t.when, x$4 = t.period, new $Int64(x$3.$high + x$4.$high, x$3.$low + x$4.$low));
+				startTimer(t);
+			}
+		}), $externalize(new $Int64(diff.$high + 0, diff.$low + 1), $Int64));
+	};
+	stopTimer = function(t) {
+		var $ptr, t, wasActive;
+		$global.clearTimeout(t.timeout);
+		wasActive = t.active;
+		t.active = false;
+		return wasActive;
 	};
 	startsWithLowerCase = function(str) {
 		var $ptr, c, str;
@@ -6730,6 +6792,51 @@ $packages["time"] = (function() {
 		return [new Duration(d.$high, d.$low), $ifaceNil];
 	};
 	$pkg.ParseDuration = ParseDuration;
+	when = function(d) {
+		var $ptr, d, t, x, x$1;
+		if ((d.$high < 0 || (d.$high === 0 && d.$low <= 0))) {
+			return runtimeNano();
+		}
+		t = (x = runtimeNano(), x$1 = new $Int64(d.$high, d.$low), new $Int64(x.$high + x$1.$high, x.$low + x$1.$low));
+		if ((t.$high < 0 || (t.$high === 0 && t.$low < 0))) {
+			t = new $Int64(2147483647, 4294967295);
+		}
+		return t;
+	};
+	sendTime = function(c, seq) {
+		var $ptr, _selection, c, seq, $r;
+		/* */ var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _selection = $f._selection; c = $f.c; seq = $f.seq; $r = $f.$r; }
+		_selection = $select([[$assertType(c, chanType), $clone(Now(), Time)], []]);
+		if (_selection[0] === 0) {
+		} else if (_selection[0] === 1) {
+		}
+		/* */ if ($f === undefined) { $f = { $blk: sendTime }; } $f.$ptr = $ptr; $f._selection = _selection; $f.c = c; $f.seq = seq; $f.$r = $r; return $f;
+	};
+	NewTicker = function(d) {
+		var $ptr, c, d, t;
+		if ((d.$high < 0 || (d.$high === 0 && d.$low <= 0))) {
+			$panic(errors.New("non-positive interval for NewTicker"));
+		}
+		c = new $Chan(Time, 1);
+		t = new Ticker.ptr(c, new runtimeTimer.ptr(0, when(d), new $Int64(d.$high, d.$low), sendTime, new chanType(c), null, false));
+		startTimer(t.r);
+		return t;
+	};
+	$pkg.NewTicker = NewTicker;
+	Ticker.ptr.prototype.Stop = function() {
+		var $ptr, t;
+		t = this;
+		stopTimer(t.r);
+	};
+	Ticker.prototype.Stop = function() { return this.$val.Stop(); };
+	Tick = function(d) {
+		var $ptr, d;
+		if ((d.$high < 0 || (d.$high === 0 && d.$low <= 0))) {
+			return $chanNil;
+		}
+		return NewTicker(d).C;
+	};
+	$pkg.Tick = Tick;
 	Time.ptr.prototype.After = function(u) {
 		var $ptr, t, u, x, x$1, x$2, x$3;
 		u = $clone(u, Time);
@@ -7900,13 +8007,16 @@ $packages["time"] = (function() {
 	};
 	Location.prototype.lookupName = function(name, unix) { return this.$val.lookupName(name, unix); };
 	ptrType$3.methods = [{prop: "Error", name: "Error", pkg: "", typ: $funcType([], [$String], false)}];
+	ptrType$5.methods = [{prop: "Stop", name: "Stop", pkg: "", typ: $funcType([], [], false)}];
 	Time.methods = [{prop: "String", name: "String", pkg: "", typ: $funcType([], [$String], false)}, {prop: "Format", name: "Format", pkg: "", typ: $funcType([$String], [$String], false)}, {prop: "AppendFormat", name: "AppendFormat", pkg: "", typ: $funcType([sliceType$3, $String], [sliceType$3], false)}, {prop: "After", name: "After", pkg: "", typ: $funcType([Time], [$Bool], false)}, {prop: "Before", name: "Before", pkg: "", typ: $funcType([Time], [$Bool], false)}, {prop: "Equal", name: "Equal", pkg: "", typ: $funcType([Time], [$Bool], false)}, {prop: "IsZero", name: "IsZero", pkg: "", typ: $funcType([], [$Bool], false)}, {prop: "abs", name: "abs", pkg: "time", typ: $funcType([], [$Uint64], false)}, {prop: "locabs", name: "locabs", pkg: "time", typ: $funcType([], [$String, $Int, $Uint64], false)}, {prop: "Date", name: "Date", pkg: "", typ: $funcType([], [$Int, Month, $Int], false)}, {prop: "Year", name: "Year", pkg: "", typ: $funcType([], [$Int], false)}, {prop: "Month", name: "Month", pkg: "", typ: $funcType([], [Month], false)}, {prop: "Day", name: "Day", pkg: "", typ: $funcType([], [$Int], false)}, {prop: "Weekday", name: "Weekday", pkg: "", typ: $funcType([], [Weekday], false)}, {prop: "ISOWeek", name: "ISOWeek", pkg: "", typ: $funcType([], [$Int, $Int], false)}, {prop: "Clock", name: "Clock", pkg: "", typ: $funcType([], [$Int, $Int, $Int], false)}, {prop: "Hour", name: "Hour", pkg: "", typ: $funcType([], [$Int], false)}, {prop: "Minute", name: "Minute", pkg: "", typ: $funcType([], [$Int], false)}, {prop: "Second", name: "Second", pkg: "", typ: $funcType([], [$Int], false)}, {prop: "Nanosecond", name: "Nanosecond", pkg: "", typ: $funcType([], [$Int], false)}, {prop: "YearDay", name: "YearDay", pkg: "", typ: $funcType([], [$Int], false)}, {prop: "Add", name: "Add", pkg: "", typ: $funcType([Duration], [Time], false)}, {prop: "Sub", name: "Sub", pkg: "", typ: $funcType([Time], [Duration], false)}, {prop: "AddDate", name: "AddDate", pkg: "", typ: $funcType([$Int, $Int, $Int], [Time], false)}, {prop: "date", name: "date", pkg: "time", typ: $funcType([$Bool], [$Int, Month, $Int, $Int], false)}, {prop: "UTC", name: "UTC", pkg: "", typ: $funcType([], [Time], false)}, {prop: "Local", name: "Local", pkg: "", typ: $funcType([], [Time], false)}, {prop: "In", name: "In", pkg: "", typ: $funcType([ptrType$1], [Time], false)}, {prop: "Location", name: "Location", pkg: "", typ: $funcType([], [ptrType$1], false)}, {prop: "Zone", name: "Zone", pkg: "", typ: $funcType([], [$String, $Int], false)}, {prop: "Unix", name: "Unix", pkg: "", typ: $funcType([], [$Int64], false)}, {prop: "UnixNano", name: "UnixNano", pkg: "", typ: $funcType([], [$Int64], false)}, {prop: "MarshalBinary", name: "MarshalBinary", pkg: "", typ: $funcType([], [sliceType$3, $error], false)}, {prop: "GobEncode", name: "GobEncode", pkg: "", typ: $funcType([], [sliceType$3, $error], false)}, {prop: "MarshalJSON", name: "MarshalJSON", pkg: "", typ: $funcType([], [sliceType$3, $error], false)}, {prop: "MarshalText", name: "MarshalText", pkg: "", typ: $funcType([], [sliceType$3, $error], false)}, {prop: "Truncate", name: "Truncate", pkg: "", typ: $funcType([Duration], [Time], false)}, {prop: "Round", name: "Round", pkg: "", typ: $funcType([Duration], [Time], false)}];
 	ptrType$6.methods = [{prop: "UnmarshalBinary", name: "UnmarshalBinary", pkg: "", typ: $funcType([sliceType$3], [$error], false)}, {prop: "GobDecode", name: "GobDecode", pkg: "", typ: $funcType([sliceType$3], [$error], false)}, {prop: "UnmarshalJSON", name: "UnmarshalJSON", pkg: "", typ: $funcType([sliceType$3], [$error], false)}, {prop: "UnmarshalText", name: "UnmarshalText", pkg: "", typ: $funcType([sliceType$3], [$error], false)}];
 	Month.methods = [{prop: "String", name: "String", pkg: "", typ: $funcType([], [$String], false)}];
 	Weekday.methods = [{prop: "String", name: "String", pkg: "", typ: $funcType([], [$String], false)}];
 	Duration.methods = [{prop: "String", name: "String", pkg: "", typ: $funcType([], [$String], false)}, {prop: "Nanoseconds", name: "Nanoseconds", pkg: "", typ: $funcType([], [$Int64], false)}, {prop: "Seconds", name: "Seconds", pkg: "", typ: $funcType([], [$Float64], false)}, {prop: "Minutes", name: "Minutes", pkg: "", typ: $funcType([], [$Float64], false)}, {prop: "Hours", name: "Hours", pkg: "", typ: $funcType([], [$Float64], false)}];
 	ptrType$1.methods = [{prop: "get", name: "get", pkg: "time", typ: $funcType([], [ptrType$1], false)}, {prop: "String", name: "String", pkg: "", typ: $funcType([], [$String], false)}, {prop: "lookup", name: "lookup", pkg: "time", typ: $funcType([$Int64], [$String, $Int, $Bool, $Int64, $Int64], false)}, {prop: "lookupFirstZone", name: "lookupFirstZone", pkg: "time", typ: $funcType([], [$Int], false)}, {prop: "firstZoneUsed", name: "firstZoneUsed", pkg: "time", typ: $funcType([], [$Bool], false)}, {prop: "lookupName", name: "lookupName", pkg: "time", typ: $funcType([$String, $Int64], [$Int, $Bool, $Bool], false)}];
+	runtimeTimer.init([{prop: "i", name: "i", pkg: "time", typ: $Int32, tag: ""}, {prop: "when", name: "when", pkg: "time", typ: $Int64, tag: ""}, {prop: "period", name: "period", pkg: "time", typ: $Int64, tag: ""}, {prop: "f", name: "f", pkg: "time", typ: funcType$1, tag: ""}, {prop: "arg", name: "arg", pkg: "time", typ: $emptyInterface, tag: ""}, {prop: "timeout", name: "timeout", pkg: "time", typ: ptrType$2, tag: ""}, {prop: "active", name: "active", pkg: "time", typ: $Bool, tag: ""}]);
 	ParseError.init([{prop: "Layout", name: "Layout", pkg: "", typ: $String, tag: ""}, {prop: "Value", name: "Value", pkg: "", typ: $String, tag: ""}, {prop: "LayoutElem", name: "LayoutElem", pkg: "", typ: $String, tag: ""}, {prop: "ValueElem", name: "ValueElem", pkg: "", typ: $String, tag: ""}, {prop: "Message", name: "Message", pkg: "", typ: $String, tag: ""}]);
+	Ticker.init([{prop: "C", name: "C", pkg: "", typ: chanType$1, tag: ""}, {prop: "r", name: "r", pkg: "time", typ: runtimeTimer, tag: ""}]);
 	Time.init([{prop: "sec", name: "sec", pkg: "time", typ: $Int64, tag: ""}, {prop: "nsec", name: "nsec", pkg: "time", typ: $Int32, tag: ""}, {prop: "loc", name: "loc", pkg: "time", typ: ptrType$1, tag: ""}]);
 	Location.init([{prop: "name", name: "name", pkg: "time", typ: $String, tag: ""}, {prop: "zone", name: "zone", pkg: "time", typ: sliceType, tag: ""}, {prop: "tx", name: "tx", pkg: "time", typ: sliceType$1, tag: ""}, {prop: "cacheStart", name: "cacheStart", pkg: "time", typ: $Int64, tag: ""}, {prop: "cacheEnd", name: "cacheEnd", pkg: "time", typ: $Int64, tag: ""}, {prop: "cacheZone", name: "cacheZone", pkg: "time", typ: ptrType, tag: ""}]);
 	zone.init([{prop: "name", name: "name", pkg: "time", typ: $String, tag: ""}, {prop: "offset", name: "offset", pkg: "time", typ: $Int, tag: ""}, {prop: "isDST", name: "isDST", pkg: "time", typ: $Bool, tag: ""}]);
@@ -30639,7 +30749,7 @@ $packages["image/gif"] = (function() {
 	return $pkg;
 })();
 $packages["main"] = (function() {
-	var $pkg = {}, $init, flag, fmt, ebiten, simulation, image, color, gif, log, os, ptrType, ptrType$1, ptrType$2, sliceType, sliceType$1, ptrType$3, arrayType, arrayType$1, arrayType$2, arrayType$3, sliceType$2, simulationImage, currentSimulation, backgroundImage, wireImages, wasMouseButtonPressed, cursorBlinking, cursorImage, oldMouseCursorPosition, cursorPosition, keyStates, main, reloadSimulation, togglePixel, readKeys, handleCursor, update, drawMask;
+	var $pkg = {}, $init, flag, fmt, ebiten, simulation, image, color, gif, log, os, time, ptrType, ptrType$1, ptrType$2, sliceType, sliceType$1, ptrType$3, arrayType, arrayType$1, arrayType$2, arrayType$3, sliceType$2, simulationTimer, simulationImage, currentSimulation, backgroundImage, wireImages, wasMouseButtonPressed, cursorBlinking, cursorImage, oldMouseCursorPosition, cursorPosition, keyStates, main, reloadSimulation, togglePixel, readKeys, handleCursor, update, drawMask;
 	flag = $packages["flag"];
 	fmt = $packages["fmt"];
 	ebiten = $packages["github.com/hajimehoshi/ebiten"];
@@ -30649,6 +30759,7 @@ $packages["main"] = (function() {
 	gif = $packages["image/gif"];
 	log = $packages["log"];
 	os = $packages["os"];
+	time = $packages["time"];
 	ptrType = $ptrType(image.Paletted);
 	ptrType$1 = $ptrType(simulation.Simulation);
 	ptrType$2 = $ptrType(ebiten.Image);
@@ -30661,10 +30772,11 @@ $packages["main"] = (function() {
 	arrayType$3 = $arrayType(arrayType$2, 4);
 	sliceType$2 = $sliceType(ebiten.ImagePart);
 	main = function() {
-		var $ptr, _q, _q$1, _r, _r$1, _r$2, _r$3, _r$4, _r$5, _tmp, _tmp$1, _tmp$2, _tuple, _tuple$1, _tuple$2, err, err$1, err$2, gifImage, height, in$1, inputFileName, p, scale, width, x, x$1, x$10, x$11, x$2, x$3, x$4, x$5, x$6, x$7, x$8, x$9, $s, $r;
-		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _q = $f._q; _q$1 = $f._q$1; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _r$4 = $f._r$4; _r$5 = $f._r$5; _tmp = $f._tmp; _tmp$1 = $f._tmp$1; _tmp$2 = $f._tmp$2; _tuple = $f._tuple; _tuple$1 = $f._tuple$1; _tuple$2 = $f._tuple$2; err = $f.err; err$1 = $f.err$1; err$2 = $f.err$2; gifImage = $f.gifImage; height = $f.height; in$1 = $f.in$1; inputFileName = $f.inputFileName; p = $f.p; scale = $f.scale; width = $f.width; x = $f.x; x$1 = $f.x$1; x$10 = $f.x$10; x$11 = $f.x$11; x$2 = $f.x$2; x$3 = $f.x$3; x$4 = $f.x$4; x$5 = $f.x$5; x$6 = $f.x$6; x$7 = $f.x$7; x$8 = $f.x$8; x$9 = $f.x$9; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
+		var $ptr, _q, _q$1, _r, _r$1, _r$2, _r$3, _r$4, _r$5, _tmp, _tmp$1, _tmp$2, _tmp$3, _tuple, _tuple$1, _tuple$2, err, err$1, err$2, gifImage, height, in$1, inputFileName, p, scale, speed, width, x, x$1, x$10, x$11, x$2, x$3, x$4, x$5, x$6, x$7, x$8, x$9, $s, $r;
+		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _q = $f._q; _q$1 = $f._q$1; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _r$4 = $f._r$4; _r$5 = $f._r$5; _tmp = $f._tmp; _tmp$1 = $f._tmp$1; _tmp$2 = $f._tmp$2; _tmp$3 = $f._tmp$3; _tuple = $f._tuple; _tuple$1 = $f._tuple$1; _tuple$2 = $f._tuple$2; err = $f.err; err$1 = $f.err$1; err$2 = $f.err$2; gifImage = $f.gifImage; height = $f.height; in$1 = $f.in$1; inputFileName = $f.inputFileName; p = $f.p; scale = $f.scale; speed = $f.speed; width = $f.width; x = $f.x; x$1 = $f.x$1; x$10 = $f.x$10; x$11 = $f.x$11; x$2 = $f.x$2; x$3 = $f.x$3; x$4 = $f.x$4; x$5 = $f.x$5; x$6 = $f.x$6; x$7 = $f.x$7; x$8 = $f.x$8; x$9 = $f.x$9; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
 		height = [height];
 		scale = [scale];
+		speed = [speed];
 		width = [width];
 		err = $ifaceNil;
 		_r = ebiten.NewImage(4, 4, 0); /* */ $s = 1; case 1: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
@@ -30681,55 +30793,59 @@ $packages["main"] = (function() {
 		_tmp = 0;
 		_tmp$1 = 0;
 		_tmp$2 = 0;
-		scale[0] = _tmp;
-		width[0] = _tmp$1;
-		height[0] = _tmp$2;
-		$r = flag.IntVar((scale.$ptr || (scale.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, scale))), "scale", 16, "pixel scale factor"); /* */ $s = 6; case 6: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-		$r = flag.IntVar((width.$ptr || (width.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, width))), "width", 64, "width of the simulation"); /* */ $s = 7; case 7: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-		$r = flag.IntVar((height.$ptr || (height.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, height))), "height", 64, "height of the simulation"); /* */ $s = 8; case 8: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-		$r = flag.Parse(); /* */ $s = 9; case 9: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		_tmp$3 = 0;
+		speed[0] = _tmp;
+		scale[0] = _tmp$1;
+		width[0] = _tmp$2;
+		height[0] = _tmp$3;
+		$r = flag.IntVar((speed.$ptr || (speed.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, speed))), "speed", 15, "simulation steps per second"); /* */ $s = 6; case 6: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = flag.IntVar((scale.$ptr || (scale.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, scale))), "scale", 16, "pixel scale factor"); /* */ $s = 7; case 7: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = flag.IntVar((width.$ptr || (width.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, width))), "width", 64, "width of the simulation"); /* */ $s = 8; case 8: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = flag.IntVar((height.$ptr || (height.$ptr = new ptrType$3(function() { return this.$target[0]; }, function($v) { this.$target[0] = $v; }, height))), "height", 64, "height of the simulation"); /* */ $s = 9; case 9: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = flag.Parse(); /* */ $s = 10; case 10: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
 		flag.Args();
 		image.Point.copy(cursorPosition, new image.Point.ptr((_q = width[0] / 2, (_q === _q && _q !== 1/0 && _q !== -1/0) ? _q >> 0 : $throwRuntimeError("integer divide by zero")), (_q$1 = height[0] / 2, (_q$1 === _q$1 && _q$1 !== 1/0 && _q$1 !== -1/0) ? _q$1 >> 0 : $throwRuntimeError("integer divide by zero"))));
-		/* */ if (flag.NArg() === 1) { $s = 10; continue; }
-		/* */ $s = 11; continue;
-		/* if (flag.NArg() === 1) { */ case 10:
+		simulationTimer = time.Tick($div64(new time.Duration(0, 1000000000), new time.Duration(0, speed[0]), false));
+		/* */ if (flag.NArg() === 1) { $s = 11; continue; }
+		/* */ $s = 12; continue;
+		/* if (flag.NArg() === 1) { */ case 11:
 			inputFileName = flag.Arg(0);
 			_tuple$1 = os.Open(inputFileName);
 			in$1 = _tuple$1[0];
 			err$1 = _tuple$1[1];
-			/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 13; continue; }
-			/* */ $s = 14; continue;
-			/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 13:
-				_r$2 = fmt.Println(new sliceType$1([err$1])); /* */ $s = 15; case 15: if($c) { $c = false; _r$2 = _r$2.$blk(); } if (_r$2 && _r$2.$blk !== undefined) { break s; }
+			/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 14; continue; }
+			/* */ $s = 15; continue;
+			/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 14:
+				_r$2 = fmt.Println(new sliceType$1([err$1])); /* */ $s = 16; case 16: if($c) { $c = false; _r$2 = _r$2.$blk(); } if (_r$2 && _r$2.$blk !== undefined) { break s; }
 				_r$2;
 				os.Exit(1);
-			/* } */ case 14:
-			_r$3 = gif.DecodeAll(in$1); /* */ $s = 16; case 16: if($c) { $c = false; _r$3 = _r$3.$blk(); } if (_r$3 && _r$3.$blk !== undefined) { break s; }
+			/* } */ case 15:
+			_r$3 = gif.DecodeAll(in$1); /* */ $s = 17; case 17: if($c) { $c = false; _r$3 = _r$3.$blk(); } if (_r$3 && _r$3.$blk !== undefined) { break s; }
 			_tuple$2 = _r$3;
 			gifImage = _tuple$2[0];
 			err$1 = _tuple$2[1];
-			/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 17; continue; }
-			/* */ $s = 18; continue;
-			/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 17:
-				$r = log.Fatal(new sliceType$1([err$1])); /* */ $s = 19; case 19: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-			/* } */ case 18:
+			/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 18; continue; }
+			/* */ $s = 19; continue;
+			/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 18:
+				$r = log.Fatal(new sliceType$1([err$1])); /* */ $s = 20; case 20: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+			/* } */ case 19:
 			simulationImage = (x$1 = gifImage.Image, (0 >= x$1.$length ? $throwRuntimeError("index out of range") : x$1.$array[x$1.$offset + 0]));
 			(x$3 = simulationImage.Palette, (0 >= x$3.$length ? $throwRuntimeError("index out of range") : x$3.$array[x$3.$offset + 0] = (x$2 = color.Transparent, new x$2.constructor.elem(x$2))));
-			$s = 12; continue;
-		/* } else { */ case 11:
+			$s = 13; continue;
+		/* } else { */ case 12:
 			p = new color.Palette([(x$4 = color.Black, new x$4.constructor.elem(x$4)), (x$5 = new color.RGBA.ptr(136, 0, 0, 255), new x$5.constructor.elem(x$5)), (x$6 = new color.RGBA.ptr(255, 0, 0, 255), new x$6.constructor.elem(x$6)), (x$7 = new color.RGBA.ptr(255, 34, 0, 255), new x$7.constructor.elem(x$7)), (x$8 = new color.RGBA.ptr(255, 68, 0, 255), new x$8.constructor.elem(x$8)), (x$9 = new color.RGBA.ptr(255, 102, 0, 255), new x$9.constructor.elem(x$9)), (x$10 = new color.RGBA.ptr(255, 136, 0, 255), new x$10.constructor.elem(x$10)), (x$11 = new color.RGBA.ptr(255, 170, 0, 255), new x$11.constructor.elem(x$11))]);
 			simulationImage = image.NewPaletted(image.Rect(0, 0, width[0], height[0]), p);
-		/* } */ case 12:
-		_r$4 = reloadSimulation(); /* */ $s = 20; case 20: if($c) { $c = false; _r$4 = _r$4.$blk(); } if (_r$4 && _r$4.$blk !== undefined) { break s; }
+		/* } */ case 13:
+		_r$4 = reloadSimulation(); /* */ $s = 21; case 21: if($c) { $c = false; _r$4 = _r$4.$blk(); } if (_r$4 && _r$4.$blk !== undefined) { break s; }
 		_r$4;
-		_r$5 = ebiten.Run(update, simulationImage.Bounds().Dx(), simulationImage.Bounds().Dy(), scale[0], "Wired Logic"); /* */ $s = 21; case 21: if($c) { $c = false; _r$5 = _r$5.$blk(); } if (_r$5 && _r$5.$blk !== undefined) { break s; }
+		_r$5 = ebiten.Run(update, simulationImage.Bounds().Dx(), simulationImage.Bounds().Dy(), scale[0], "Wired Logic"); /* */ $s = 22; case 22: if($c) { $c = false; _r$5 = _r$5.$blk(); } if (_r$5 && _r$5.$blk !== undefined) { break s; }
 		err$2 = _r$5;
-		/* */ if (!($interfaceIsEqual(err$2, $ifaceNil))) { $s = 22; continue; }
-		/* */ $s = 23; continue;
-		/* if (!($interfaceIsEqual(err$2, $ifaceNil))) { */ case 22:
-			$r = log.Fatal(new sliceType$1([err$2])); /* */ $s = 24; case 24: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
-		/* } */ case 23:
-		/* */ $s = -1; case -1: } return; } if ($f === undefined) { $f = { $blk: main }; } $f.$ptr = $ptr; $f._q = _q; $f._q$1 = _q$1; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._r$4 = _r$4; $f._r$5 = _r$5; $f._tmp = _tmp; $f._tmp$1 = _tmp$1; $f._tmp$2 = _tmp$2; $f._tuple = _tuple; $f._tuple$1 = _tuple$1; $f._tuple$2 = _tuple$2; $f.err = err; $f.err$1 = err$1; $f.err$2 = err$2; $f.gifImage = gifImage; $f.height = height; $f.in$1 = in$1; $f.inputFileName = inputFileName; $f.p = p; $f.scale = scale; $f.width = width; $f.x = x; $f.x$1 = x$1; $f.x$10 = x$10; $f.x$11 = x$11; $f.x$2 = x$2; $f.x$3 = x$3; $f.x$4 = x$4; $f.x$5 = x$5; $f.x$6 = x$6; $f.x$7 = x$7; $f.x$8 = x$8; $f.x$9 = x$9; $f.$s = $s; $f.$r = $r; return $f;
+		/* */ if (!($interfaceIsEqual(err$2, $ifaceNil))) { $s = 23; continue; }
+		/* */ $s = 24; continue;
+		/* if (!($interfaceIsEqual(err$2, $ifaceNil))) { */ case 23:
+			$r = log.Fatal(new sliceType$1([err$2])); /* */ $s = 25; case 25: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		/* } */ case 24:
+		/* */ $s = -1; case -1: } return; } if ($f === undefined) { $f = { $blk: main }; } $f.$ptr = $ptr; $f._q = _q; $f._q$1 = _q$1; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._r$4 = _r$4; $f._r$5 = _r$5; $f._tmp = _tmp; $f._tmp$1 = _tmp$1; $f._tmp$2 = _tmp$2; $f._tmp$3 = _tmp$3; $f._tuple = _tuple; $f._tuple$1 = _tuple$1; $f._tuple$2 = _tuple$2; $f.err = err; $f.err$1 = err$1; $f.err$2 = err$2; $f.gifImage = gifImage; $f.height = height; $f.in$1 = in$1; $f.inputFileName = inputFileName; $f.p = p; $f.scale = scale; $f.speed = speed; $f.width = width; $f.x = x; $f.x$1 = x$1; $f.x$10 = x$10; $f.x$11 = x$11; $f.x$2 = x$2; $f.x$3 = x$3; $f.x$4 = x$4; $f.x$5 = x$5; $f.x$6 = x$6; $f.x$7 = x$7; $f.x$8 = x$8; $f.x$9 = x$9; $f.$s = $s; $f.$r = $r; return $f;
 	};
 	reloadSimulation = function() {
 		var $ptr, _i, _i$1, _r, _r$1, _r$2, _r$3, _ref, _ref$1, _tuple, _tuple$1, err, err$1, i, img, img$1, wire, wires, $s, $r;
@@ -30896,61 +31012,69 @@ $packages["main"] = (function() {
 		/* */ } return; } if ($f === undefined) { $f = { $blk: handleCursor }; } $f.$ptr = $ptr; $f._entry = _entry; $f._entry$1 = _entry$1; $f._entry$2 = _entry$2; $f._entry$3 = _entry$3; $f._entry$4 = _entry$4; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._r$4 = _r$4; $f._r$5 = _r$5; $f._tuple = _tuple; $f.cursorMoved = cursorMoved; $f.err = err; $f.err$1 = err$1; $f.mx = mx; $f.my = my; $f.op = op; $f.screen = screen; $f.$s = $s; $f.$r = $r; return $f;
 	};
 	update = function(screen) {
-		var $ptr, _i, _r, _r$1, _r$2, _r$3, _ref, _tuple, a, b, charge, err, err$1, err$2, g, i, newSimulation, oldCharge, op, position, r, screen, wire, wires, x, x$1, $s, $r;
-		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _i = $f._i; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _ref = $f._ref; _tuple = $f._tuple; a = $f.a; b = $f.b; charge = $f.charge; err = $f.err; err$1 = $f.err$1; err$2 = $f.err$2; g = $f.g; i = $f.i; newSimulation = $f.newSimulation; oldCharge = $f.oldCharge; op = $f.op; position = $f.position; r = $f.r; screen = $f.screen; wire = $f.wire; wires = $f.wires; x = $f.x; x$1 = $f.x$1; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
+		var $ptr, _i, _r, _r$1, _r$2, _r$3, _ref, _selection, _tuple, a, b, charge, err, err$1, err$2, g, i, newSimulation, oldCharge, op, position, r, screen, wire, wires, x, x$1, $s, $r;
+		/* */ $s = 0; var $f, $c = false; if (this !== undefined && this.$blk !== undefined) { $f = this; $c = true; $ptr = $f.$ptr; _i = $f._i; _r = $f._r; _r$1 = $f._r$1; _r$2 = $f._r$2; _r$3 = $f._r$3; _ref = $f._ref; _selection = $f._selection; _tuple = $f._tuple; a = $f.a; b = $f.b; charge = $f.charge; err = $f.err; err$1 = $f.err$1; err$2 = $f.err$2; g = $f.g; i = $f.i; newSimulation = $f.newSimulation; oldCharge = $f.oldCharge; op = $f.op; position = $f.position; r = $f.r; screen = $f.screen; wire = $f.wire; wires = $f.wires; x = $f.x; x$1 = $f.x$1; $s = $f.$s; $r = $f.$r; } s: while (true) { switch ($s) { case 0:
 		readKeys();
-		newSimulation = currentSimulation.Step();
-		wires = currentSimulation.Circuit().Wires();
-		_ref = wires;
-		_i = 0;
-		/* while (true) { */ case 1:
-			/* if (!(_i < _ref.$length)) { break; } */ if(!(_i < _ref.$length)) { $s = 2; continue; }
-			i = _i;
-			wire = ((_i < 0 || _i >= _ref.$length) ? $throwRuntimeError("index out of range") : _ref.$array[_ref.$offset + _i]);
-			oldCharge = currentSimulation.State(wire).Charge();
-			charge = newSimulation.State(wire).Charge();
-			/* */ if (oldCharge === charge) { $s = 3; continue; }
-			/* */ $s = 4; continue;
-			/* if (oldCharge === charge) { */ case 3:
+		_selection = $select([[simulationTimer], []]);
+		/* */ if (_selection[0] === 0) { $s = 1; continue; }
+		/* */ if (_selection[0] === 1) { $s = 2; continue; }
+		/* */ $s = 3; continue;
+		/* if (_selection[0] === 0) { */ case 1:
+			newSimulation = currentSimulation.Step();
+			wires = currentSimulation.Circuit().Wires();
+			_ref = wires;
+			_i = 0;
+			/* while (true) { */ case 4:
+				/* if (!(_i < _ref.$length)) { break; } */ if(!(_i < _ref.$length)) { $s = 5; continue; }
+				i = _i;
+				wire = ((_i < 0 || _i >= _ref.$length) ? $throwRuntimeError("index out of range") : _ref.$array[_ref.$offset + _i]);
+				oldCharge = currentSimulation.State(wire).Charge();
+				charge = newSimulation.State(wire).Charge();
+				/* */ if (oldCharge === charge) { $s = 6; continue; }
+				/* */ $s = 7; continue;
+				/* if (oldCharge === charge) { */ case 6:
+					_i++;
+					/* continue; */ $s = 4; continue;
+				/* } */ case 7:
+				position = $clone(wire.Bounds().Min, image.Point);
+				op = new ebiten.DrawImageOptions.ptr($ifaceNil, new ebiten.GeoM.ptr(false, arrayType$1.zero()), new ebiten.ColorM.ptr(false, arrayType$3.zero()), sliceType$2.nil);
+				op.GeoM.Translate(position.X, position.Y);
+				_r = (x = simulationImage.Palette, x$1 = charge + 1 << 24 >>> 24, ((x$1 < 0 || x$1 >= x.$length) ? $throwRuntimeError("index out of range") : x.$array[x.$offset + x$1])).RGBA(); /* */ $s = 8; case 8: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
+				_tuple = _r;
+				r = _tuple[0];
+				g = _tuple[1];
+				b = _tuple[2];
+				a = _tuple[3];
+				op.ColorM.Scale(r / 65535, g / 65535, b / 65535, a / 65535);
+				_r$1 = backgroundImage.DrawImage(((i < 0 || i >= wireImages.$length) ? $throwRuntimeError("index out of range") : wireImages.$array[wireImages.$offset + i]), op); /* */ $s = 9; case 9: if($c) { $c = false; _r$1 = _r$1.$blk(); } if (_r$1 && _r$1.$blk !== undefined) { break s; }
+				err = _r$1;
+				/* */ if (!($interfaceIsEqual(err, $ifaceNil))) { $s = 10; continue; }
+				/* */ $s = 11; continue;
+				/* if (!($interfaceIsEqual(err, $ifaceNil))) { */ case 10:
+					return err;
+				/* } */ case 11:
 				_i++;
-				/* continue; */ $s = 1; continue;
-			/* } */ case 4:
-			position = $clone(wire.Bounds().Min, image.Point);
-			op = new ebiten.DrawImageOptions.ptr($ifaceNil, new ebiten.GeoM.ptr(false, arrayType$1.zero()), new ebiten.ColorM.ptr(false, arrayType$3.zero()), sliceType$2.nil);
-			op.GeoM.Translate(position.X, position.Y);
-			_r = (x = simulationImage.Palette, x$1 = charge + 1 << 24 >>> 24, ((x$1 < 0 || x$1 >= x.$length) ? $throwRuntimeError("index out of range") : x.$array[x.$offset + x$1])).RGBA(); /* */ $s = 5; case 5: if($c) { $c = false; _r = _r.$blk(); } if (_r && _r.$blk !== undefined) { break s; }
-			_tuple = _r;
-			r = _tuple[0];
-			g = _tuple[1];
-			b = _tuple[2];
-			a = _tuple[3];
-			op.ColorM.Scale(r / 65535, g / 65535, b / 65535, a / 65535);
-			_r$1 = backgroundImage.DrawImage(((i < 0 || i >= wireImages.$length) ? $throwRuntimeError("index out of range") : wireImages.$array[wireImages.$offset + i]), op); /* */ $s = 6; case 6: if($c) { $c = false; _r$1 = _r$1.$blk(); } if (_r$1 && _r$1.$blk !== undefined) { break s; }
-			err = _r$1;
-			/* */ if (!($interfaceIsEqual(err, $ifaceNil))) { $s = 7; continue; }
-			/* */ $s = 8; continue;
-			/* if (!($interfaceIsEqual(err, $ifaceNil))) { */ case 7:
-				return err;
-			/* } */ case 8:
-			_i++;
-		/* } */ $s = 1; continue; case 2:
-		currentSimulation = newSimulation;
-		_r$2 = screen.DrawImage(backgroundImage, new ebiten.DrawImageOptions.ptr($ifaceNil, new ebiten.GeoM.ptr(false, arrayType$1.zero()), new ebiten.ColorM.ptr(false, arrayType$3.zero()), sliceType$2.nil)); /* */ $s = 9; case 9: if($c) { $c = false; _r$2 = _r$2.$blk(); } if (_r$2 && _r$2.$blk !== undefined) { break s; }
+			/* } */ $s = 4; continue; case 5:
+			currentSimulation = newSimulation;
+			$s = 3; continue;
+		/* } else if (_selection[0] === 1) { */ case 2:
+		/* } */ case 3:
+		_r$2 = screen.DrawImage(backgroundImage, new ebiten.DrawImageOptions.ptr($ifaceNil, new ebiten.GeoM.ptr(false, arrayType$1.zero()), new ebiten.ColorM.ptr(false, arrayType$3.zero()), sliceType$2.nil)); /* */ $s = 12; case 12: if($c) { $c = false; _r$2 = _r$2.$blk(); } if (_r$2 && _r$2.$blk !== undefined) { break s; }
 		err$1 = _r$2;
-		/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 10; continue; }
-		/* */ $s = 11; continue;
-		/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 10:
-			return err$1;
-		/* } */ case 11:
-		_r$3 = handleCursor(screen); /* */ $s = 12; case 12: if($c) { $c = false; _r$3 = _r$3.$blk(); } if (_r$3 && _r$3.$blk !== undefined) { break s; }
-		err$2 = _r$3;
-		/* */ if (!($interfaceIsEqual(err$2, $ifaceNil))) { $s = 13; continue; }
+		/* */ if (!($interfaceIsEqual(err$1, $ifaceNil))) { $s = 13; continue; }
 		/* */ $s = 14; continue;
-		/* if (!($interfaceIsEqual(err$2, $ifaceNil))) { */ case 13:
-			return err$2;
+		/* if (!($interfaceIsEqual(err$1, $ifaceNil))) { */ case 13:
+			return err$1;
 		/* } */ case 14:
+		_r$3 = handleCursor(screen); /* */ $s = 15; case 15: if($c) { $c = false; _r$3 = _r$3.$blk(); } if (_r$3 && _r$3.$blk !== undefined) { break s; }
+		err$2 = _r$3;
+		/* */ if (!($interfaceIsEqual(err$2, $ifaceNil))) { $s = 16; continue; }
+		/* */ $s = 17; continue;
+		/* if (!($interfaceIsEqual(err$2, $ifaceNil))) { */ case 16:
+			return err$2;
+		/* } */ case 17:
 		return $ifaceNil;
-		/* */ } return; } if ($f === undefined) { $f = { $blk: update }; } $f.$ptr = $ptr; $f._i = _i; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._ref = _ref; $f._tuple = _tuple; $f.a = a; $f.b = b; $f.charge = charge; $f.err = err; $f.err$1 = err$1; $f.err$2 = err$2; $f.g = g; $f.i = i; $f.newSimulation = newSimulation; $f.oldCharge = oldCharge; $f.op = op; $f.position = position; $f.r = r; $f.screen = screen; $f.wire = wire; $f.wires = wires; $f.x = x; $f.x$1 = x$1; $f.$s = $s; $f.$r = $r; return $f;
+		/* */ } return; } if ($f === undefined) { $f = { $blk: update }; } $f.$ptr = $ptr; $f._i = _i; $f._r = _r; $f._r$1 = _r$1; $f._r$2 = _r$2; $f._r$3 = _r$3; $f._ref = _ref; $f._selection = _selection; $f._tuple = _tuple; $f.a = a; $f.b = b; $f.charge = charge; $f.err = err; $f.err$1 = err$1; $f.err$2 = err$2; $f.g = g; $f.i = i; $f.newSimulation = newSimulation; $f.oldCharge = oldCharge; $f.op = op; $f.position = position; $f.r = r; $f.screen = screen; $f.wire = wire; $f.wires = wires; $f.x = x; $f.x$1 = x$1; $f.$s = $s; $f.$r = $r; return $f;
 	};
 	drawMask = function(wire) {
 		var $ptr, _i, _ref, bounds, img, pixel, position, white, wire;
@@ -30981,6 +31105,8 @@ $packages["main"] = (function() {
 		$r = gif.$init(); /* */ $s = 7; case 7: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
 		$r = log.$init(); /* */ $s = 8; case 8: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
 		$r = os.$init(); /* */ $s = 9; case 9: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		$r = time.$init(); /* */ $s = 10; case 10: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		simulationTimer = $chanNil;
 		simulationImage = ptrType.nil;
 		currentSimulation = ptrType$1.nil;
 		backgroundImage = ptrType$2.nil;
@@ -30991,12 +31117,12 @@ $packages["main"] = (function() {
 		oldMouseCursorPosition = new image.Point.ptr(-1, -1);
 		cursorPosition = new image.Point.ptr(-1, -1);
 		keyStates = $makeMap(ebiten.Key.keyFor, [{ k: 68, v: 0 }, { k: 42, v: 0 }, { k: 60, v: 0 }, { k: 64, v: 0 }, { k: 66, v: 0 }]);
-		/* */ if ($pkg === $mainPkg) { $s = 10; continue; }
-		/* */ $s = 11; continue;
-		/* if ($pkg === $mainPkg) { */ case 10:
-			$r = main(); /* */ $s = 12; case 12: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
+		/* */ if ($pkg === $mainPkg) { $s = 11; continue; }
+		/* */ $s = 12; continue;
+		/* if ($pkg === $mainPkg) { */ case 11:
+			$r = main(); /* */ $s = 13; case 13: if($c) { $c = false; $r = $r.$blk(); } if ($r && $r.$blk !== undefined) { break s; }
 			$mainFinished = true;
-		/* } */ case 11:
+		/* } */ case 12:
 		/* */ } return; } if ($f === undefined) { $f = { $blk: $init }; } $f.$s = $s; $f.$r = $r; return $f;
 	};
 	$pkg.$init = $init;
