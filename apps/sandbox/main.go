@@ -77,7 +77,7 @@ func main() {
 		simulationImage = image.NewPaletted(image.Rect(0, 0, width, height), p)
 	}
 	reloadSimulation()
-	if err := ebiten.Run(update, simulationImage.Bounds().Dx(), simulationImage.Bounds().Dy(), scale, "Wired Logic"); err != nil {
+	if err := ebiten.Run(update, simulationImage.Bounds().Dx(), simulationImage.Bounds().Dy(), float64(scale), "Wired Logic"); err != nil {
 		log.Fatal(err)
 	}
 }
