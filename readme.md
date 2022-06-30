@@ -16,7 +16,7 @@ Execute the following command to convert a static image into an animation…
 
     go run $GOPATH/src/github.com/martinkirsche/wired-logic/apps/gif/main.go input.gif output.gif
 
-…or draw your own circuit using the [Wired Logic Sandbox](http://martinkirsche.github.com/wired-logic/) in your browser.
+…or draw your own circuit using the [Wired Logic Sandbox](http://martinkirsche.github.io/wired-logic/) in your browser.
 
 How does it work?
 -----------------
